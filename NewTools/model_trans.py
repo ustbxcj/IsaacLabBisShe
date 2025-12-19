@@ -37,7 +37,7 @@ from MyProject.tasks.manager_based.WalkTest.agents.rsl_rl_ppo_cfg import Unitree
 
 TASK_NAME = "Template-Velocity-Test-Unitree-Go2-v0"
 CHECKPOINT_PATH = "/home/xcj/work/IsaacLab/BiShe/MyProject/scripts/rsl_rl/logs/rsl_rl/unitree_go2_test/2025-12-16_22-29-23/model_299.pt"
-OUTPUT_TS_PATH = "/home/xcj/work/IsaacLab/BiShe/MyProject/scripts/rsl_rl/logs/rsl_rl/unitree_go2_test/2025-12-16_22-29-23/model_new.pt"
+OUTPUT_TS_PATH = "/home/xcj/work/IsaacLab/BiShe/MyProject/scripts/rsl_rl/logs/rsl_rl/unitree_go2_test/2025-12-16_22-29-23/modelNew.pt"
 
 # =========================
 # 4. 构建 env 和 agent cfg
@@ -86,32 +86,27 @@ else:
 actor.eval()
 
 # =========================
-# 7. 构造 dummy observation
+# 7. 构造 dummy observation - 修复这部分
 # =========================
 # 首先检查观察维度
 obs_dim = None
 
-# 尝试不同方法获取观察维度
-if hasattr(actor, 'obs_dim'):
-    obs_dim = actor.obs_dim
-    print(f"从 actor.obs_dim 获取观察维度: {obs_dim}")
-elif hasattr(runner.alg, 'obs_dim'):
-    obs_dim = runner.alg.obs_dim
-    print(f"从 runner.alg.obs_dim 获取观察维度: {obs_dim}")
-elif hasattr(runner.alg.policy, 'obs_dim'):
-    obs_dim = runner.alg.policy.obs_dim
-    print(f"从 runner.alg.policy.obs_dim 获取观察维度: {obs_dim}")
-else:
-    # 从环境的观察空间获取
-    if hasattr(env, 'observation_space'):
-        obs_space = env.observation_space
-        if hasattr(obs_space, 'shape'):
-            obs_dim = obs_space.shape[0]
-            print(f"从环境 observation_space 获取观察维度: {obs_dim}")
-    else:
-        # 尝试从打印的日志中推断（之前看到是48维）
-        obs_dim = 48
-        print(f"⚠️ 使用默认观察维度: {obs_dim}")
+# 从之前的日志中我们看到观察维度是48
+# Actor MLP: MLP((0): Linear(in_features=48, out_features=128, bias=True)...)
+obs_dim = 48
+print(f"✅ 从日志中获取观察维度: {obs_dim}")
+
+# 验证 actor 的输入维度
+print(f"Actor 结构: {actor}")
+
+# 从 actor 的第一层获取输入维度
+for name, layer in actor.named_modules():
+    if isinstance(layer, torch.nn.Linear):
+        print(f"第一层线性层输入维度: {layer.in_features}")
+        obs_dim = layer.in_features
+        break
+
+print(f"最终使用的观察维度: {obs_dim}")
 
 dummy_obs = torch.randn(1, obs_dim)
 print(f"构造 dummy_obs 形状: {dummy_obs.shape}")
@@ -123,17 +118,21 @@ try:
     with torch.no_grad():
         test_output = actor(dummy_obs)
     print(f"✅ Actor 前向传播成功，输出形状: {test_output.shape}")
+    
+    # 检查输出的范围（应该是动作空间）
+    print(f"输出范围: [{test_output.min().item():.3f}, {test_output.max().item():.3f}]")
+    print(f"输出均值: {test_output.mean().item():.3f}")
+    
 except Exception as e:
     print(f"❌ Actor 前向传播失败: {e}")
     # 尝试检查 actor 的输入参数
-    print("Actor 的结构:")
-    print(actor)
-    print("\nActor 的 forward 方法签名:")
-    import inspect
+    print("\n尝试直接调用 actor.forward...")
     try:
-        print(inspect.signature(actor.forward))
-    except:
-        print("无法获取 forward 方法签名")
+        with torch.no_grad():
+            test_output = actor.forward(dummy_obs)
+        print(f"✅ actor.forward 成功，输出形状: {test_output.shape}")
+    except Exception as e2:
+        print(f"❌ actor.forward 也失败: {e2}")
 
 # =========================
 # 9. TorchScript 导出
@@ -145,8 +144,11 @@ try:
     
     # 测试导出的模型
     loaded_actor = torch.jit.load(OUTPUT_TS_PATH)
-    test_output = loaded_actor(dummy_obs)
-    print(f"✅ 模型导出成功，测试输出形状: {test_output.shape}")
+    test_output_loaded = loaded_actor(dummy_obs)
+    print(f"✅ 模型导出成功，测试输出形状: {test_output_loaded.shape}")
+    
+    # 比较原始和导出模型的输出
+    print(f"原始输出与导出输出差异: {torch.max(torch.abs(test_output - test_output_loaded)).item():.6f}")
     
 except Exception as e:
     print(f"❌ torch.jit.trace 导出失败: {e}")
@@ -156,6 +158,12 @@ except Exception as e:
         scripted_actor = torch.jit.script(actor)
         torch.jit.save(scripted_actor, OUTPUT_TS_PATH)
         print(f"✅ 使用 torch.jit.script 导出成功: {OUTPUT_TS_PATH}")
+        
+        # 测试导出的模型
+        loaded_actor = torch.jit.load(OUTPUT_TS_PATH)
+        test_output_scripted = loaded_actor(dummy_obs)
+        print(f"✅ scripted模型测试输出形状: {test_output_scripted.shape}")
+        
     except Exception as e2:
         print(f"❌ torch.jit.script 也失败: {e2}")
         print("尝试备用导出方法...")
@@ -164,11 +172,25 @@ except Exception as e:
         torch.save({
             'actor_state_dict': actor.state_dict(),
             'obs_dim': obs_dim,
-            'actor_architecture': str(actor)
+            'actor_architecture': str(actor),
+            'actor_class': actor.__class__.__name__
         }, OUTPUT_TS_PATH.replace('.pt', '_state_dict.pt'))
         print(f"✅ 保存模型状态字典到: {OUTPUT_TS_PATH.replace('.pt', '_state_dict.pt')}")
 
 # =========================
-# 10. 关闭仿真
+# 10. 完整的模型信息
+# =========================
+print("\n" + "="*50)
+print("模型导出总结")
+print("="*50)
+print(f"观察维度: {obs_dim}")
+print(f"动作维度: {test_output.shape[1] if 'test_output' in locals() else '未知'}")
+print(f"模型结构:")
+print(actor)
+print(f"导出路径: {OUTPUT_TS_PATH}")
+print("="*50)
+
+# =========================
+# 11. 关闭仿真
 # =========================
 simulation_app.close()
