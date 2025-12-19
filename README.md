@@ -72,7 +72,7 @@ If everything executes correctly, it should create a file .python.env in the `.v
 The file contains the python paths to all the extensions provided by Isaac Sim and Omniverse.
 This helps in indexing all the python modules for intelligent suggestions while writing code.
 
-### Setup as Omniverse Extension (Optional)
+<!-- ### Setup as Omniverse Extension (Optional)
 
 We provide an example UI extension that will load upon enabling your extension defined in `source/MyProject/MyProject/ui_extension_example.py`.
 
@@ -87,9 +87,9 @@ To enable your extension, follow these steps:
 
 2. **Search and enable your extension**:
     - Find your extension under the `Third Party` category.
-    - Toggle it to enable your extension.
+    - Toggle it to enable your extension. -->
 
-## Code formatting
+<!-- ## Code formatting
 
 We have a pre-commit template to automatically format your code.
 To install pre-commit:
@@ -102,7 +102,7 @@ Then you can run pre-commit with:
 
 ```bash
 pre-commit run --all-files
-```
+``` -->
 
 ## Troubleshooting
 
@@ -119,7 +119,7 @@ In this case, add the path to your extension in `.vscode/settings.json` under th
 }
 ```
 
-### Pylance Crash
+<!-- ### Pylance Crash
 
 If you encounter a crash in `pylance`, it is probable that too many files are indexed and you run out of memory.
 A possible solution is to exclude some of omniverse packages that are not used in your project.
@@ -132,4 +132,4 @@ Some examples of packages that can likely be excluded are:
 "<path-to-isaac-sim>/extscache/omni.graph.*"        // Graph UI tools
 "<path-to-isaac-sim>/extscache/omni.services.*"     // Services tools
 ...
-```# IsaacLabBisShe
+```# IsaacLabBisShe -->

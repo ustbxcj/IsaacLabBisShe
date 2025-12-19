@@ -346,3 +346,15 @@ class LocomotionVelocityTestEnvCfg(ManagerBasedRLEnvCfg):
         else:
             if self.scene.terrain.terrain_generator is not None:
                 self.scene.terrain.terrain_generator.curriculum = False
+
+
+@configclass
+class LocomotionVelocityTestEnvCfg_Play(LocomotionVelocityTestEnvCfg):
+    """Configuration for the locomotion velocity-tracking environment."""
+    def __post_init__(self) -> None:
+        # post init of parent
+        super().__post_init__()
+
+        # make a smaller scene for play
+        self.scene.num_envs = 50
+        self.scene.env_spacing = 2.5
