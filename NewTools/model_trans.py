@@ -194,3 +194,7 @@ print("="*50)
 # 11. 关闭仿真
 # =========================
 simulation_app.close()
+# # in order to exit compulsively
+# # 添加下面两行 ↓
+# import os
+# os._exit(0)  # 强制退出，不等待

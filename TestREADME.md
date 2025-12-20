@@ -11,6 +11,4 @@ Use this project
    use the model_trans.py to transfer then generate a ploicy called p2
 5. Use the p2 to modify the path in the naviation_test_env_cfg.py
 6. Train the final policy follow as this order
-   ‘python train.py --task Template-Naviation-Test-Unitree-Go2-v0 --headless’
-
-
+   ‘python train.py --task’
