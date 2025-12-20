@@ -243,6 +243,6 @@ class LocomotionNaviationTestEnvCfg_Play(LocomotionNaviationTestEnvCfg):
 
         # make a smaller scene for play
         self.scene.num_envs = 50
-        self.scene.env_spacing = 2.5
+        self.scene.env_spacing = 4
         # disable randomization for play
         self.observations.policy.enable_corruption = False
