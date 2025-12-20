@@ -127,3 +127,76 @@ def heading_command_error_abs(env: ManagerBasedRLEnv, command_name: str) -> torc
     command = env.command_manager.get_command(command_name)
     heading_b = command[:, 3]
     return heading_b.abs()
+
+
+#测试奖励函数
+def final_position_reward(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    activate_time: float = 1.0,
+) -> torch.Tensor:
+    """
+    Reward only at the end of episode based on final distance to target.
+    """
+    # # 计算剩余时间（秒）
+    # elapsed_time = env.episode_length_buf * env.step_dt
+    # time_left =env.episode_length_s - elapsed_time
+    # # 只在最后 `activate_time` 秒激活
+    # active = time_left < activate_time
+#It might be very strange
+    # 计算剩余时间（秒）
+    elapsed_time = env.episode_length_buf 
+    dt = env.step_dt
+    time_left = (env.max_episode_length -elapsed_time) * dt
+    # 只在最后 `activate_time` 秒激活
+    active = time_left < activate_time
+
+    # 获取目标位置
+    command = env.command_manager.get_command(command_name)
+    des_pos_b = command[:, :3]
+
+    # 计算距离
+    dist = torch.norm(des_pos_b, dim=1)
+
+    # 距离奖励：距离越近奖励越高
+    reward = 1.0 / (1.0 + dist * dist)
+    
+    # 只在回合结束时给予奖励
+    return reward * active.float()
+
+def exploration_direction_reward(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """
+    Encourage base velocity pointing towards target direction.
+    """
+    asset = env.scene[asset_cfg.name]
+
+    # base linear velocity in body frame
+    v = asset.data.root_lin_vel_b[:, :2]
+
+    # target direction in body frame
+    command = env.command_manager.get_command(command_name)
+    target_dir = command[:, :2]
+
+    v_norm = torch.norm(v, dim=1)
+    d_norm = torch.norm(target_dir, dim=1)
+
+    # cosine similarity
+    cos = (v * target_dir).sum(dim=1) / (v_norm * d_norm + 1e-6)
+
+    # only meaningful when robot is moving
+    return cos * (v_norm > 0.05).float()
+
+
+def reached_platform(
+    env,
+    platform_height: float = 0.4,
+    tol: float = 0.05,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+):
+    asset = env.scene[asset_cfg.name]
+    z = asset.data.root_pos_w[:, 2]
+    return (z > platform_height - tol).float()

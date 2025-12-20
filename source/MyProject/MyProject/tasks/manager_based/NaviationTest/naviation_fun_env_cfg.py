@@ -163,7 +163,7 @@ class CommandsCfg:
         simple_heading=False,
         resampling_time_range=(8.0, 8.0),
         debug_vis=True,
-        ranges=mdp.UniformPose2dCommandCfg.Ranges(pos_x=(-3.0, 3.0), pos_y=(-3.0, 3.0), heading=(-math.pi, math.pi)),
+        ranges=mdp.UniformPose2dCommandCfg.Ranges(pos_x=(1.5, 2.5), pos_y=(-0.5, 0.5), heading=(-math.pi, math.pi)),
     )
 
 
@@ -198,7 +198,10 @@ class ObservationsCfg:
         base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
         projected_gravity = ObsTerm(func=mdp.projected_gravity)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "pose_command"})
-
+        height_scan = ObsTerm(
+            func=mdp.height_scan,
+            params={"sensor_cfg": SceneEntityCfg("height_scanner")},
+        )
     # observation groups
     policy: PolicyCfg = PolicyCfg()
 
@@ -229,18 +232,38 @@ class RewardsCfg:
     termination_penalty = RewTerm(func=mdp.is_terminated, weight=-400.0)
     position_tracking = RewTerm(
         func=mdp.position_command_error_tanh,
-        weight=0.5,
+        weight=0.1,
         params={"std": 2.0, "command_name": "pose_command"},
     )
     position_tracking_fine_grained = RewTerm(
         func=mdp.position_command_error_tanh,
-        weight=0.5,
+        weight=0.05,
         params={"std": 0.2, "command_name": "pose_command"},
     )
     orientation_tracking = RewTerm(
         func=mdp.heading_command_error_abs,
         weight=-0.2,
         params={"command_name": "pose_command"},
+    )
+    reach_platform = RewTerm(
+        func=mdp.reached_platform,
+        weight=2.0,
+        params={"platform_height": 0.4},
+    )
+
+    final_position = RewTerm(
+    func=mdp.final_position_reward,
+    weight=5.0,
+    params={
+        "command_name": "pose_command",
+        "activate_time": 1.0,
+    },
+    )
+
+    exploration_dir = RewTerm(
+    func=mdp.exploration_direction_reward,
+    weight=0.3,
+    params={"command_name": "pose_command"},
     )
 
 
@@ -280,7 +303,8 @@ class NaviFunTaskEnvCfg(ManagerBasedRLEnvCfg):
         self.sim.render_interval = LOW_LEVEL_ENV_CFG.decimation
         self.decimation = LOW_LEVEL_ENV_CFG.decimation * 10
         self.episode_length_s = self.commands.pose_command.resampling_time_range[1]
-
+        self.scene.num_envs = 512
+        self.scene.env_spacing = 5
         if self.scene.height_scanner is not None:
             self.scene.height_scanner.update_period = (
                 self.actions.pre_trained_policy_action.low_level_decimation * self.sim.dt
