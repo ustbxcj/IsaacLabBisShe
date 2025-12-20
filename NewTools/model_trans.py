@@ -36,8 +36,8 @@ from MyProject.tasks.manager_based.WalkTest.walk_test_env_cfg import (
 from MyProject.tasks.manager_based.WalkTest.agents.rsl_rl_ppo_cfg import UnitreeGo2TestPPORunnerCfg
 
 TASK_NAME = "Template-Velocity-Test-Unitree-Go2-v0"
-CHECKPOINT_PATH = "/home/xcj/work/IsaacLab/BiShe/MyProject/scripts/rsl_rl/logs/rsl_rl/unitree_go2_test/2025-12-16_22-29-23/model_299.pt"
-OUTPUT_TS_PATH = "/home/xcj/work/IsaacLab/BiShe/MyProject/scripts/rsl_rl/logs/rsl_rl/unitree_go2_test/2025-12-16_22-29-23/modelNew.pt"
+CHECKPOINT_PATH = "/home/robot/work/BiShe/IsaacLabBisShe/scripts/rsl_rl/logs/rsl_rl/unitree_go2_test/2025-12-19_13-50-31/policy.pt"
+OUTPUT_TS_PATH = "/home/robot/work/BiShe/IsaacLabBisShe/scripts/rsl_rl/logs/rsl_rl/unitree_go2_test/2025-12-19_13-50-31/policy_New.pt"
 
 # =========================
 # 4. 构建 env 和 agent cfg
