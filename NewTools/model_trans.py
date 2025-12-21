@@ -36,8 +36,8 @@ from MyProject.tasks.manager_based.WalkTest.walk_test_env_cfg import (
 from MyProject.tasks.manager_based.WalkTest.agents.rsl_rl_ppo_cfg import UnitreeGo2TestPPORunnerCfg
 
 TASK_NAME = "Template-Velocity-Test-Unitree-Go2-v0"
-CHECKPOINT_PATH = "/home/robot/work/BiShe/IsaacLabBisShe/scripts/rsl_rl/logs/rsl_rl/unitree_go2_test/2025-12-19_13-50-31/policy.pt"
-OUTPUT_TS_PATH = "/home/robot/work/BiShe/IsaacLabBisShe/scripts/rsl_rl/logs/rsl_rl/unitree_go2_test/2025-12-19_13-50-31/policy_New.pt"
+CHECKPOINT_PATH = "/home/robot/work/BiShe/IsaacLabBisShe/ModelBackup/Rought_Walk_policy.pt"
+OUTPUT_TS_PATH = "/home/robot/work/BiShe/IsaacLabBisShe/ModelBackup/Rought_Walk_policy_Transfer.pt"
 
 # =========================
 # 4. 构建 env 和 agent cfg
@@ -91,9 +91,10 @@ actor.eval()
 # 首先检查观察维度
 obs_dim = None
 
-# 从之前的日志中我们看到观察维度是48
-# Actor MLP: MLP((0): Linear(in_features=48, out_features=128, bias=True)...)
-obs_dim = 48
+# 从之前的日志中我们看到观察维度是235
+# Actor MLP: MLP((0): Linear(in_features=235, out_features=128, bias=True)...)
+
+obs_dim = 235
 print(f"✅ 从日志中获取观察维度: {obs_dim}")
 
 # 验证 actor 的输入维度
