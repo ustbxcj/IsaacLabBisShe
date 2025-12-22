@@ -114,7 +114,7 @@ class ActionsCfg:
     # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.25, use_default_offset=True)
     pre_trained_policy_action: mdp.PreTrainedPolicyActionCfg = mdp.PreTrainedPolicyActionCfg(
         asset_name="robot",
-        policy_path="/home/robot/work/BiShe/IsaacLabBisShe/scripts/rsl_rl/logs/rsl_rl/unitree_go2_test/2025-12-19_13-50-31/policy_New.pt",
+        policy_path="/home/xcj/work/IsaacLab/BiShe/MyProject/ModelBackup/Rought_Walk_policy_Transfer.pt",
         # policy_path=f"{ISAACLAB_NUCLEUS_DIR}/Policies/ANYmal-C/Blind/policy.pt",
         #This
         # policy_path=f"{ISAACLAB_NUCLEUS_DIR}/Policies/ANYmal-C/Blind/policy.pt",
@@ -195,11 +195,11 @@ class TerminationsCfg:
     )
 
 
-# @configclass
-# class CurriculumCfg:
-#     """Curriculum terms for the MDP."""
+@configclass
+class CurriculumCfg:
+    """Curriculum terms for the MDP."""
 
-#     terrain_levels = CurrTerm(func=mdp.terrain_levels_vel)
+    terrain_levels = CurrTerm(func=mdp.terrain_levels_vel)
 
 
 ##

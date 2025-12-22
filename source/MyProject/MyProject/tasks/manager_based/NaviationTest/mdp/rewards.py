@@ -129,74 +129,106 @@ def heading_command_error_abs(env: ManagerBasedRLEnv, command_name: str) -> torc
     return heading_b.abs()
 
 
-#测试奖励函数
-def final_position_reward(
-    env: ManagerBasedRLEnv,
-    command_name: str,
-    activate_time: float = 1.0,
-) -> torch.Tensor:
-    """
-    Reward only at the end of episode based on final distance to target.
-    """
-    # # 计算剩余时间（秒）
-    # elapsed_time = env.episode_length_buf * env.step_dt
-    # time_left =env.episode_length_s - elapsed_time
-    # # 只在最后 `activate_time` 秒激活
-    # active = time_left < activate_time
-#It might be very strange
-    # 计算剩余时间（秒）
-    elapsed_time = env.episode_length_buf 
-    dt = env.step_dt
-    time_left = (env.max_episode_length -elapsed_time) * dt
-    # 只在最后 `activate_time` 秒激活
-    active = time_left < activate_time
+# #测试奖励函数
+# def final_position_reward(
+#     env: ManagerBasedRLEnv,
+#     command_name: str,
+#     activate_time: float = 1.0,
+# ) -> torch.Tensor:
+#     """
+#     Reward only at the end of episode based on final distance to target.
+#     """
+#     # # 计算剩余时间（秒）
+#     # elapsed_time = env.episode_length_buf * env.step_dt
+#     # time_left =env.episode_length_s - elapsed_time
+#     # # 只在最后 `activate_time` 秒激活
+#     # active = time_left < activate_time
+# #It might be very strange
+#     # 计算剩余时间（秒）
+#     elapsed_time = env.episode_length_buf 
+#     dt = env.step_dt
+#     time_left = (env.max_episode_length -elapsed_time) * dt
+#     # 只在最后 `activate_time` 秒激活
+#     active = time_left < activate_time
 
-    # 获取目标位置
-    command = env.command_manager.get_command(command_name)
-    des_pos_b = command[:, :3]
+#     # 获取目标位置
+#     command = env.command_manager.get_command(command_name)
+#     des_pos_b = command[:, :3]
 
-    # 计算距离
-    dist = torch.norm(des_pos_b, dim=1)
+#     # 计算距离
+#     dist = torch.norm(des_pos_b, dim=1)
 
-    # 距离奖励：距离越近奖励越高
-    reward = 1.0 / (1.0 + dist * dist)
+#     # 距离奖励：距离越近奖励越高
+#     reward = 1.0 / (1.0 + dist * dist)
     
-    # 只在回合结束时给予奖励
-    return reward * active.float()
+#     # 只在回合结束时给予奖励
+#     return reward * active.float()
 
-def exploration_direction_reward(
-    env: ManagerBasedRLEnv,
-    command_name: str,
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-) -> torch.Tensor:
-    """
-    Encourage base velocity pointing towards target direction.
-    """
-    asset = env.scene[asset_cfg.name]
+# def exploration_direction_reward(
+#     env: ManagerBasedRLEnv,
+#     command_name: str,
+#     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+# ) -> torch.Tensor:
+#     """
+#     Encourage base velocity pointing towards target direction.
+#     """
+#     asset = env.scene[asset_cfg.name]
 
-    # base linear velocity in body frame
-    v = asset.data.root_lin_vel_b[:, :2]
+#     # base linear velocity in body frame
+#     v = asset.data.root_lin_vel_b[:, :2]
 
-    # target direction in body frame
-    command = env.command_manager.get_command(command_name)
-    target_dir = command[:, :2]
+#     # target direction in body frame
+#     command = env.command_manager.get_command(command_name)
+#     target_dir = command[:, :2]
 
-    v_norm = torch.norm(v, dim=1)
-    d_norm = torch.norm(target_dir, dim=1)
+#     v_norm = torch.norm(v, dim=1)
+#     d_norm = torch.norm(target_dir, dim=1)
 
-    # cosine similarity
-    cos = (v * target_dir).sum(dim=1) / (v_norm * d_norm + 1e-6)
+#     # cosine similarity
+#     cos = (v * target_dir).sum(dim=1) / (v_norm * d_norm + 1e-6)
 
-    # only meaningful when robot is moving
-    return cos * (v_norm > 0.05).float()
+#     # only meaningful when robot is moving
+#     return cos * (v_norm > 0.05).float()
 
 
-def reached_platform(
-    env,
-    platform_height: float = 0.4,
-    tol: float = 0.05,
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-):
-    asset = env.scene[asset_cfg.name]
-    z = asset.data.root_pos_w[:, 2]
-    return (z > platform_height - tol).float()
+# def reached_platform(
+#     env : ManagerBasedRLEnv,
+#     platform_height: float = 0.26,
+#     tol: float = 0.05,
+#     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+# ):
+#     asset = env.scene[asset_cfg.name]
+#     z = asset.data.root_pos_w[:, 2]
+#     return (z > platform_height - tol).float()
+
+#########################################CorrectedByAi##########################
+# def reached_platform_correct(
+#     env: ManagerBasedRLEnv,
+#     platform_pos: tuple = (2.0, 0.0, 0.13),  # (x, y, z)
+#     xy_tolerance: float = 0.6,  # 水平容差
+#     height_tolerance: float = 0.05,  # 高度容差
+#     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+# ):
+#     asset = env.scene[asset_cfg.name]
+    
+#     # 机器人位置
+#     robot_pos = asset.data.root_pos_w[:, :3]  # (x, y, z)
+    
+#     # 平台位置
+#     platform_pos_tensor = torch.tensor([platform_pos], device=env.device)
+    
+#     # 1. 检查水平距离
+#     horizontal_dist = torch.norm(robot_pos[:, :2] - platform_pos_tensor[:, :2], dim=1)
+#     in_position = horizontal_dist < xy_tolerance
+    
+#     # 2. 检查高度
+#     height_diff = robot_pos[:, 2] - platform_pos_tensor[:, 2]
+#     at_height = height_diff > -height_tolerance  # 机器人高度不低于平台太多
+    
+#     # 3. 必须同时满足两个条件
+#     on_platform = in_position & at_height
+    
+#     return on_platform.float()
+################################################################################
+
+

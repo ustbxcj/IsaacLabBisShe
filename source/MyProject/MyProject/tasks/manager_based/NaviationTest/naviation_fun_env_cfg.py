@@ -85,7 +85,7 @@ class MySceneCfg(InteractiveSceneCfg):
     platform = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/Platform",
         spawn=sim_utils.CuboidCfg(
-            size=(1.2, 1.2, 0.4),
+            size=(1.0, 1.0, 0.26),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(),
             mass_props=sim_utils.MassPropertiesCfg(mass=0.0),
             collision_props=sim_utils.CollisionPropertiesCfg(),
@@ -96,7 +96,7 @@ class MySceneCfg(InteractiveSceneCfg):
             ),
         ),
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=(2.0, 0.0, 0.2),
+            pos=(2.0, 0.0, 0.13),
         ),
     )
 
@@ -163,7 +163,7 @@ class CommandsCfg:
         simple_heading=False,
         resampling_time_range=(8.0, 8.0),
         debug_vis=True,
-        ranges=mdp.UniformPose2dCommandCfg.Ranges(pos_x=(1.5, 2.5), pos_y=(-0.5, 0.5), heading=(-math.pi, math.pi)),
+        ranges=mdp.UniformPose2dCommandCfg.Ranges(pos_x=(1.0, 3.0), pos_y=(-1.0, 1.0), heading=(-math.pi, math.pi)),
     )
 
 
@@ -174,7 +174,7 @@ class ActionsCfg:
     # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.25, use_default_offset=True)
     pre_trained_policy_action: mdp.PreTrainedPolicyActionCfg = mdp.PreTrainedPolicyActionCfg(
         asset_name="robot",
-        policy_path="/home/robot/work/BiShe/IsaacLabBisShe/scripts/rsl_rl/logs/rsl_rl/unitree_go2_test/2025-12-19_13-50-31/policy_New.pt",
+        policy_path="/home/xcj/work/IsaacLab/BiShe/MyProject/ModelBackup/Rought_Walk_policy_Transfer.pt",
         # policy_path=f"{ISAACLAB_NUCLEUS_DIR}/Policies/ANYmal-C/Blind/policy.pt",
         #This
         # policy_path=f"{ISAACLAB_NUCLEUS_DIR}/Policies/ANYmal-C/Blind/policy.pt",
@@ -214,7 +214,7 @@ class EventCfg:
         func=mdp.reset_root_state_uniform,
         mode="reset",
         params={
-            "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-3.14, 3.14)},
+            "pose_range": {"x": (0.5, 3.5), "y": (-1.5, 1.5), "yaw": (-3.14, 3.14)},
             "velocity_range": {
                 "x": (-0.0, 0.0),
                 "y": (-0.0, 0.0),
@@ -232,12 +232,12 @@ class RewardsCfg:
     termination_penalty = RewTerm(func=mdp.is_terminated, weight=-400.0)
     position_tracking = RewTerm(
         func=mdp.position_command_error_tanh,
-        weight=0.1,
+        weight=0.5,
         params={"std": 2.0, "command_name": "pose_command"},
     )
     position_tracking_fine_grained = RewTerm(
         func=mdp.position_command_error_tanh,
-        weight=0.05,
+        weight=0.5,
         params={"std": 0.2, "command_name": "pose_command"},
     )
     orientation_tracking = RewTerm(
@@ -245,26 +245,26 @@ class RewardsCfg:
         weight=-0.2,
         params={"command_name": "pose_command"},
     )
-    reach_platform = RewTerm(
-        func=mdp.reached_platform,
-        weight=2.0,
-        params={"platform_height": 0.4},
-    )
+    # reach_platform = RewTerm(
+    #     func=mdp.reached_platform,
+    #     weight=2.0,
+    #     params={"platform_height": 0.26},
+    # )
 
-    final_position = RewTerm(
-    func=mdp.final_position_reward,
-    weight=5.0,
-    params={
-        "command_name": "pose_command",
-        "activate_time": 1.0,
-    },
-    )
+    # final_position = RewTerm(
+    # func=mdp.final_position_reward,
+    # weight=5.0,
+    # params={
+    #     "command_name": "pose_command",
+    #     "activate_time": 1.0,
+    # },
+    # )
 
-    exploration_dir = RewTerm(
-    func=mdp.exploration_direction_reward,
-    weight=0.3,
-    params={"command_name": "pose_command"},
-    )
+    # exploration_dir = RewTerm(
+    # func=mdp.exploration_direction_reward,
+    # weight=0.3,
+    # params={"command_name": "pose_command"},
+    # )
 
 
 @configclass
