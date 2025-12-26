@@ -33,17 +33,27 @@ from isaaclab_rl.rsl_rl import RslRlVecEnvWrapper
 from MyProject.tasks.manager_based.WalkTest.walk_test_env_cfg import (
     LocomotionVelocityTestEnvCfg,
 )
-from MyProject.tasks.manager_based.WalkTest.agents.rsl_rl_ppo_cfg import UnitreeGo2TestPPORunnerCfg
 
+# from MyProject.tasks.manager_based.NaviationTest.naviation_test_env_cfg import (
+    # LocomotionNaviationTestEnvCfg,
+# )
+from MyProject.tasks.manager_based.WalkTest.agents.rsl_rl_ppo_cfg import UnitreeGo2TestPPORunnerCfg
+# from MyProject.tasks.manager_based.NaviationTest.agents.rsl_rl_ppo_cfg import NaviationTestPPORunnerCfg
 TASK_NAME = "Template-Velocity-Test-Unitree-Go2-v0"
-CHECKPOINT_PATH = "/home/robot/work/BiShe/IsaacLabBisShe/ModelBackup/Rought_Walk_policy.pt"
-OUTPUT_TS_PATH = "/home/robot/work/BiShe/IsaacLabBisShe/ModelBackup/Rought_Walk_policy_Transfer.pt"
+#这个也得修改任务
+# TASK_NAME = "Template-Naviation-Test-Unitree-Go2-v0"
+# CHECKPOINT_PATH = "/home/xcj/work/IsaacLab/BiShe/MyProject/ModelBackup/Rough_Walk_policy_Simple.pt"
+# OUTPUT_TS_PATH = "/home/xcj/work/IsaacLab/BiShe/MyProject/ModelBackup/Rough_Walk_policy_Simple_Transfer.pt"
 
 # =========================
 # 4. 构建 env 和 agent cfg
 # =========================
+# env_cfg = LocomotionNaviationTestEnvCfg()
+# agent_cfg = NaviationTestPPORunnerCfg()
+#修改环境和智能体配置
 env_cfg = LocomotionVelocityTestEnvCfg()
 agent_cfg = UnitreeGo2TestPPORunnerCfg()
+# 这里需要修改
 
 env = gym.make(TASK_NAME, cfg=env_cfg)
 env = RslRlVecEnvWrapper(env)
