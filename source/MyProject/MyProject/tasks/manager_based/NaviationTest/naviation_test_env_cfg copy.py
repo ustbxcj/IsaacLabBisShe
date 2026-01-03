@@ -182,21 +182,6 @@ class RewardsCfg:
         weight=-0.2,
         params={"command_name": "pose_command"},
     )
-    progress = RewTerm(
-        func=mdp.progress_reward,
-        weight=2.0,
-        params={"command_name": "pose_command"},
-    )
-    velocity_alignment = RewTerm(
-        func=mdp.velocity_toward_target,
-        weight=0.3,
-        params={"command_name": "pose_command"},
-    )
-    height_climbing = RewTerm(
-        func=mdp.height_progress_near_obstacle,
-        weight=5.0,
-        params={"command_name": "pose_command", "height_threshold": 0.15, "distance_threshold": 1.0},
-    )
 
 
 @configclass
