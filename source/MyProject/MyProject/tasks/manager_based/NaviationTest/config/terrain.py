@@ -82,6 +82,39 @@ HARD_PIT_TERRAINS_CFG = TerrainGeneratorCfg(
         ),
     },
 )
+
+# 混合坑洞地形 - 从不同难度中随机采样
+MIXED_PIT_TERRAINS_CFG = TerrainGeneratorCfg(
+    size=(10.0, 10.0),
+    border_width=20.0,
+    num_rows=10,
+    num_cols=20,
+    horizontal_scale=0.1,
+    vertical_scale=0.005,
+    slope_threshold=0.75,
+    use_cache=False,
+    sub_terrains={
+        "easy_pit": terrain_gen.MeshPitTerrainCfg(
+            proportion=0.4,
+            pit_depth_range=(0.1, 0.2),
+            platform_width=1.5,
+            double_pit=False,
+        ),
+        "medium_pit": terrain_gen.MeshPitTerrainCfg(
+            proportion=0.4,
+            pit_depth_range=(0.15, 0.3),
+            platform_width=1.0,
+            double_pit=False,
+        ),
+        "hard_pit": terrain_gen.MeshPitTerrainCfg(
+            proportion=0.2,
+            pit_depth_range=(0.25, 0.4),
+            platform_width=0.8,
+            double_pit=True,
+        ),
+    },
+)
+
 #复杂地形
 ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
     size=(8.0, 8.0),

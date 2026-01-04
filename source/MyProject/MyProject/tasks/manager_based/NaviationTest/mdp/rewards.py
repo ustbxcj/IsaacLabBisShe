@@ -199,6 +199,249 @@ def height_progress_near_obstacle(
     return reward
 
 
+"""
+Stair Climbing Reward Functions (based on paper)
+"""
+
+def climb_progress_reward(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    max_forward_distance: float = 2.0,
+    sigma: float = 0.25,
+) -> torch.Tensor:
+    """Reward for making progress toward climbing the stairs/platform.
+
+    Based on the paper's formulation:
+    reward = tanh((max_forward_dist - current_dist) / sigma)
+
+    This reward uses a tanh kernel to smoothly reward progress toward the platform.
+
+    Args:
+        env: The environment instance.
+        command_name: Name of the command containing target position.
+        max_forward_distance: Maximum forward distance for normalization (default: 2.0m from paper).
+        sigma: Scaling factor for tanh (default: 0.25 from paper).
+
+    Returns:
+        Reward tensor with values in range [-1, 1], where 1 means reaching the target.
+    """
+    # Extract robot and command data
+    asset = env.scene["robot"]
+    commands = env.command_manager.get_command(command_name)
+
+    # Get current robot position (x, y)
+    robot_pos_xy = asset.data.root_pos_w[:, :2]
+    # Get target position (x, y)
+    target_pos_xy = commands[:, :2]
+
+    # Compute distance to target
+    dist_to_target = torch.norm(target_pos_xy - robot_pos_xy, dim=-1)
+
+    # Compute progress: tanh((max_forward_dist - current_dist) / sigma)
+    progress = torch.tanh((max_forward_distance - dist_to_target) / sigma)
+
+    return progress
+
+
+def linear_velocity_tracking_reward(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    std: float = 0.5,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Reward tracking of linear velocity commands using exponential kernel.
+
+    Based on the paper's velocity tracking reward formulation:
+    r_t = exp(-||v_cmd - v_actual||^2 / std^2)
+
+    Args:
+        env: The environment instance.
+        command_name: Name of the velocity command.
+        std: Standard deviation for exponential kernel (default: 0.5 m/s).
+        asset_cfg: Asset configuration.
+
+    Returns:
+        Reward tensor with values in range [0, 1], where 1 means perfect tracking.
+    """
+    # Extract used quantities
+    asset = env.scene[asset_cfg.name]
+    # Get commanded velocity
+    commanded_vel = env.command_manager.get_command(command_name)[:, :2]  # vx, vy
+    # Get actual velocity in body frame
+    actual_vel = asset.data.root_lin_vel_b[:, :2]
+
+    # Compute L2 squared error
+    vel_error = torch.sum(torch.square(commanded_vel - actual_vel), dim=1)
+
+    # Exponential kernel reward
+    return torch.exp(-vel_error / (std ** 2))
+
+
+def angular_velocity_tracking_reward(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    std: float = 0.5,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Reward tracking of angular velocity command using exponential kernel.
+
+    Based on the paper's angular velocity tracking reward formulation:
+    r_t = exp(-(ω_cmd - ω_actual)^2 / std^2)
+
+    Args:
+        env: The environment instance.
+        command_name: Name of the velocity command.
+        std: Standard deviation for exponential kernel (default: 0.5 rad/s).
+        asset_cfg: Asset configuration.
+
+    Returns:
+        Reward tensor with values in range [0, 1], where 1 means perfect tracking.
+    """
+    # Extract used quantities
+    asset = env.scene[asset_cfg.name]
+    # Get commanded angular velocity (yaw)
+    commanded_ang_vel = env.command_manager.get_command(command_name)[:, 2]  # ωz
+    # Get actual angular velocity in body frame
+    actual_ang_vel = asset.data.root_ang_vel_b[:, 2]
+
+    # Compute squared error
+    ang_vel_error = torch.square(commanded_ang_vel - actual_ang_vel)
+
+    # Exponential kernel reward
+    return torch.exp(-ang_vel_error / (std ** 2))
+
+
+"""
+Penalty terms for stair climbing (based on paper)
+"""
+
+
+def joint_position_penalty(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Penalize joint position deviation from default position.
+
+    This encourages the robot to stay close to its default joint configuration.
+
+    Args:
+        env: The environment instance.
+        asset_cfg: Asset configuration specifying which joints to penalize.
+
+    Returns:
+        Penalty tensor (L2 norm of deviation).
+    """
+    from isaaclab.envs import mdp as base_mdp
+    return base_mdp.joint_deviation_l1(env, asset_cfg)
+
+
+def joint_velocity_penalty(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Penalize joint velocities.
+
+    This encourages smooth motion and prevents excessive joint speeds.
+
+    Args:
+        env: The environment instance.
+        asset_cfg: Asset configuration specifying which joints to penalize.
+
+    Returns:
+        Penalty tensor (L2 norm of joint velocities).
+    """
+    from isaaclab.envs import mdp as base_mdp
+    return base_mdp.joint_vel_l2(env, asset_cfg)
+
+
+def action_rate_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Penalize the rate of change of actions.
+
+    This encourages smooth control by penalizing large changes between consecutive actions.
+
+    Returns:
+        Penalty tensor (L2 norm of action difference).
+    """
+    from isaaclab.envs import mdp as base_mdp
+    return base_mdp.action_rate_l2(env)
+
+
+def torque_penalty(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Penalize applied joint torques.
+
+    This encourages energy-efficient motion by penalizing large torques.
+
+    Args:
+        env: The environment instance.
+        asset_cfg: Asset configuration specifying which joints to penalize.
+
+    Returns:
+        Penalty tensor (L2 norm of applied torques).
+    """
+    from isaaclab.envs import mdp as base_mdp
+    return base_mdp.joint_torques_l2(env, asset_cfg)
+
+
+def body_linear_acceleration_penalty(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Penalize the linear acceleration of robot bodies.
+
+    This encourages smooth motion and prevents jerky movements.
+
+    Args:
+        env: The environment instance.
+        asset_cfg: Asset configuration with body_ids to penalize.
+
+    Returns:
+        Penalty tensor (sum of L2 norms of body linear accelerations).
+    """
+    from isaaclab.envs import mdp as base_mdp
+    return base_mdp.body_lin_acc_l2(env, asset_cfg)
+
+
+def orientation_penalty(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Penalize non-flat orientation (pitch and roll).
+
+    This encourages the robot to maintain an upright posture.
+
+    Args:
+        env: The environment instance.
+        asset_cfg: Asset configuration.
+
+    Returns:
+        Penalty tensor (L2 norm of xy components of projected gravity vector).
+    """
+    from isaaclab.envs import mdp as base_mdp
+    return base_mdp.flat_orientation_l2(env, asset_cfg)
+
+
+def vertical_lin_vel_penalty(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Penalize vertical linear velocity.
+
+    This discourages excessive jumping and encourages stable ground contact.
+
+    Args:
+        env: The environment instance.
+        asset_cfg: Asset configuration.
+
+    Returns:
+        Penalty tensor (squared vertical velocity).
+    """
+    from isaaclab.envs import mdp as base_mdp
+    return base_mdp.lin_vel_z_l2(env, asset_cfg)
+
+
 # #测试奖励函数
 # def final_position_reward(
 #     env: ManagerBasedRLEnv,

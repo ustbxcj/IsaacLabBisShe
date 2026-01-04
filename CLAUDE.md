@@ -71,13 +71,135 @@ Each task defines MDP components in its config file (e.g., `naviation_test_env_c
 - **Terminations**: Episode end conditions in `mdp/terminations.py`
 - **Events**: Randomization and resets
 
+### 观测空间配置 (Observation Space)
+
+#### 高层策略观测（NaviationTest）
+高层策略需要丰富的环境感知信息来学习爬高台技能：
+
+| 观测项 | 维度 | 说明 |
+|--------|------|------|
+| base_lin_vel | 3 | 机器人线速度 (vx, vy, vz) |
+| base_ang_vel | 3 | 机器人角速度 (ωx, ωy, ωz) |
+| projected_gravity | 3 | 重力投影向量（姿态信息） |
+| pose_command | 4 | 目标位置和航向 (x, y, z, heading) |
+| height_scan | 160 | 前方地形高度扫描（爬高台关键！） |
+| last_action | 3 | 上一时刻动作 (vx_cmd, vy_cmd, ωz_cmd) |
+| **总计** | **176** | 观测空间维度 |
+
+**关键观测说明**：
+- **height_scan**（最重要）：使用16×10网格射线扫描，让策略"看到"前方高台
+- **base_ang_vel**：提供旋转状态信息，对姿态调整至关重要
+- **last_action**：帮助策略输出平滑的动作
+
+配置位置：`naviation_test_env_cfg.py` -> `ObservationsCfg.PolicyCfg`
+
+#### 低层策略观测（WalkTest）
+低层策略控制关节运动，需要更详细的本体感知信息：
+
+| 观测项 | 维度 | 说明 |
+|--------|------|------|
+| base_lin_vel | 3 | 线速度 |
+| base_ang_vel | 3 | 角速度 |
+| projected_gravity | 3 | 重力投影 |
+| velocity_commands | 3 | 速度命令 |
+| joint_pos | 12 | 关节位置相对值 |
+| joint_vel | 12 | 关节速度相对值 |
+| actions | 12 | 上一步关节动作 |
+| height_scan | 160 | 地形高度扫描 |
+| **总计** | **~200** | 观测空间维度 |
+
 ### Reward Functions
 Navigation rewards (`NaviationTest/mdp/rewards.py`):
-- `position_command_error_tanh`: Position tracking with tanh kernel
-- `heading_command_error_abs`: Orientation tracking
-- `progress_reward`: Rewards reducing distance to target
-- `velocity_toward_target`: Rewards velocity aligned with target direction
-- `height_progress_near_obstacle`: Rewards climbing behavior near obstacles
+
+#### 主要任务奖励 (Primary Task Rewards)
+- `climb_progress_reward`: **爬台阶进展奖励** - 基于论文实现的tanh内核奖励函数
+  - 公式: `tanh((max_forward_dist - current_dist) / sigma)`
+  - 奖励机器人向高台目标的进展，范围[-1, 1]
+  - 参数: `max_forward_distance=2.0m`, `sigma=0.25`
+
+- `position_command_error_tanh`: **位置跟踪奖励** - 使用tanh内核
+  - 粗粒度版本 (std=2.0): 大范围位置跟踪
+  - 细粒度版本 (std=0.2): 接近目标时的精细跟踪
+
+- `heading_command_error_abs`: **航向跟踪奖励** - 姿态角度跟踪
+
+- `progress_reward`: **进展奖励** - 奖励到目标距离的减少
+
+- `velocity_toward_target`: **速度对齐奖励** - 奖励朝向目标方向的速度
+
+- `height_progress_near_obstacle`: **高度爬升奖励** - 在障碍物附近奖励高度增益
+
+#### 正则化惩罚项 (Regularization Penalties)
+基于论文添加的惩罚项，用于引导机器人学习自然、稳定的动作：
+
+- `joint_position_penalty`: **关节位置惩罚** - 惩罚偏离默认关节配置
+  - 权重: -0.01
+  - 保持机器人姿态自然
+
+- `joint_velocity_penalty`: **关节速度惩罚** - 惩罚过大的关节速度
+  - 权重: -0.001
+  - 鼓励平滑运动
+
+- `action_rate_penalty`: **动作率惩罚** - 惩罚动作变化率
+  - 权重: -0.01
+  - 鼓励平滑控制，避免抖动
+
+- `torque_penalty`: **力矩惩罚** - 惩罚过大的关节力矩
+  - 权重: -0.0002
+  - 促进能效优化
+
+- `body_linear_acceleration_penalty`: **身体加速度惩罚** - 惩罚身体线加速度
+  - 权重: -1.0e-6
+  - 防止剧烈运动
+
+- `orientation_penalty`: **姿态惩罚** - 惩罚非水平姿态（pitch和roll）
+  - 权重: -0.1
+  - 鼓励保持直立姿势
+
+- `vertical_lin_vel_penalty`: **垂直速度惩罚** - 惩罚垂直方向速度
+  - 权重: -1.0
+  - 防止过度跳跃，鼓励稳定接地
+
+### 奖励函数配置 (Reward Configuration)
+所有奖励函数在 `naviation_test_env_cfg.py` 的 `RewardsCfg` 类中配置：
+
+```python
+@configclass
+class RewardsCfg:
+    # 主要任务奖励
+    climb_progress = RewTerm(func=mdp.climb_progress_reward, weight=2.0)
+    position_tracking = RewTerm(func=mdp.position_command_error_tanh, weight=1.0)
+    height_climbing = RewTerm(func=mdp.height_progress_near_obstacle, weight=5.0)
+
+    # 正则化惩罚
+    joint_position_penalty = RewTerm(func=mdp.joint_position_penalty, weight=-0.01)
+    orientation_penalty = RewTerm(func=mdp.orientation_penalty, weight=-0.1)
+    vertical_velocity_penalty = RewTerm(func=mdp.vertical_lin_vel_penalty, weight=-1.0)
+    # ... 更多惩罚项
+```
+
+### 训练调试建议
+
+#### 监控指标
+- **climb_progress**: 主要关注此奖励，值应该逐渐接近1.0
+- **height_climbing**: 在接近高台时应该增加
+- **position_tracking**: 应该随着训练稳定上升
+
+#### 权重调整策略
+1. **爬得太慢**: 增加 `climb_progress` 权重 (当前2.0 → 3.0-5.0)
+2. **容易翻倒**: 增加 `orientation_penalty` 权重 (当前-0.1 → -0.5)
+3. **动作剧烈**: 增加 `action_rate_penalty` 权重 (当前-0.01 → -0.05)
+4. **姿势不自然**: 增加 `joint_position_penalty` 权重 (当前-0.01 → -0.05)
+5. **过度跳跃**: 增加 `vertical_velocity_penalty` 权重 (当前-1.0 → -2.0)
+
+#### 论文参考
+奖励函数设计基于论文:
+"Hierarchical Reinforcement Learning for Agile Quadrupedal Locomotion with Demonstrations"
+
+关键公式:
+- 进展奖励: `tanh((max_dist - current_dist) / σ)`
+- 速度跟踪: `exp(-||v_cmd - v_actual||² / std²)`
+- 角速度跟踪: `exp(-(ω_cmd - ω_actual)² / std²)`
 
 ### Environment Registration
 Tasks are registered as Gym environments in `__init__.py` files:
