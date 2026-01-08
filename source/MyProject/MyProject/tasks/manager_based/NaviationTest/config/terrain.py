@@ -40,7 +40,7 @@ EASY_PIT_TERRAINS_CFG = TerrainGeneratorCfg(
     sub_terrains={
         "shallow_pit": terrain_gen.MeshPitTerrainCfg(
             proportion=1.0,
-            pit_depth_range=(0.1, 0.4),  # 浅坑
+            pit_depth_range=(0.1, 0.2),  # 浅坑
             platform_width=2.0,          # 大平台
             double_pit=False,
         ),
@@ -58,7 +58,7 @@ MEDIUM_PIT_TERRAINS_CFG = TerrainGeneratorCfg(
     sub_terrains={
         "medium_pit": terrain_gen.MeshPitTerrainCfg(
             proportion=1.0,
-            pit_depth_range=(0.3, 0.8),  # 中等深度
+            pit_depth_range=(0.2, 0.3),  # 中等深度
             platform_width=1.5,
             double_pit=False,
         ),
@@ -76,7 +76,7 @@ HARD_PIT_TERRAINS_CFG = TerrainGeneratorCfg(
     sub_terrains={
         "hard_pit": terrain_gen.MeshPitTerrainCfg(
             proportion=1.0,
-            pit_depth_range=(0.5, 1.2),  # 深坑
+            pit_depth_range=(0.2, 0.5),  # 深坑
             platform_width=1.0,          # 小平台
             double_pit=True,            # 双层
         ),
@@ -85,36 +85,48 @@ HARD_PIT_TERRAINS_CFG = TerrainGeneratorCfg(
 
 # 混合坑洞地形 - 从不同难度中随机采样
 MIXED_PIT_TERRAINS_CFG = TerrainGeneratorCfg(
+    # 基础参数
     size=(10.0, 10.0),
-    border_width=20.0,
-    num_rows=10,
-    num_cols=20,
-    horizontal_scale=0.1,
-    vertical_scale=0.005,
-    slope_threshold=0.75,
-    use_cache=False,
+    border_width=12.0,
+    num_rows=12,
+    num_cols=24,
+    horizontal_scale=0.08,      # 更细腻的水平分辨率
+    vertical_scale=0.004,       # 更精细的垂直分辨率
+    slope_threshold=0.7,        # 稍微降低坡度阈值
+    use_cache=False,           # 训练时不使用缓存
+    
+    # # 地形噪声和随机性
+    # noise_range=(0.005, 0.015),  # 添加轻微的地表噪声
+    # roughness=0.01,             # 表面粗糙度
+    
+    # 子地形配置 - 三个难度级别
     sub_terrains={
+        # 1. 简单坑洞 (40%) - 入门训练
         "easy_pit": terrain_gen.MeshPitTerrainCfg(
-            proportion=0.4,
-            pit_depth_range=(0.1, 0.2),
-            platform_width=1.5,
+            proportion=0.30,
+            pit_depth_range=(0.1, 0.25),      # 更浅的坑，易于学习
+            platform_width=2,                # 更大的中心平台
             double_pit=False,
         ),
+        
+        # 2. 中等坑洞 (45%) - 过渡训练
         "medium_pit": terrain_gen.MeshPitTerrainCfg(
-            proportion=0.4,
-            pit_depth_range=(0.15, 0.3),
-            platform_width=1.0,
+            proportion=0.50,
+            pit_depth_range=(0.20, 0.35),      # 中等深度
+            platform_width=2,
             double_pit=False,
+
         ),
+        # 3. 困难坑洞 (15%) - 强化训练
         "hard_pit": terrain_gen.MeshPitTerrainCfg(
-            proportion=0.2,
-            pit_depth_range=(0.25, 0.4),
-            platform_width=0.8,
-            double_pit=True,
+            proportion=0.20,
+            pit_depth_range=(0.30, 0.45),        # 最深坑洞
+            platform_width=2,                # 更小的中心平台
+            double_pit=False,                   # 双层结构
+
         ),
     },
 )
-
 #复杂地形
 ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
     size=(8.0, 8.0),

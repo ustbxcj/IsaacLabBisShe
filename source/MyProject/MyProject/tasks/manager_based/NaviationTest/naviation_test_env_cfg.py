@@ -59,7 +59,7 @@ class MySceneCfg(InteractiveSceneCfg):
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
         terrain_type="generator",
-        terrain_generator=MEDIUM_PIT_TERRAINS_CFG,
+        terrain_generator=MIXED_PIT_TERRAINS_CFG,
         max_init_terrain_level=5,
         collision_group=-1,
         physics_material=sim_utils.RigidBodyMaterialCfg(
@@ -112,8 +112,8 @@ class CommandsCfg:
         resampling_time_range=(8.0, 8.0),
         debug_vis=True,
         ranges=mdp.UniformPose2dCommandCfg.Ranges(
-            pos_x=(-1.5, 1.5),  # 减小范围，让目标更容易到达
-            pos_y=(-1.5, 1.5),  # 减小范围
+            pos_x=(-3, 3),  # 减小范围，让目标更容易到达
+            pos_y=(-3, 3),  # 减小范围
             heading=(-math.pi, math.pi)
         ),
     )
