@@ -8,6 +8,7 @@ from dataclasses import MISSING
 
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg
+from isaaclab.assets import RigidObject, RigidObjectCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.managers import CurriculumTermCfg as CurrTerm
 from isaaclab.managers import EventTermCfg as EventTerm
@@ -36,15 +37,9 @@ from isaaclab_assets.robots.unitree import UNITREE_GO2_CFG  # isort: skip
 ##
 
 import MyProject.tasks.manager_based.NaviationTest.mdp as mdp
-from MyProject.tasks.manager_based.WalkTest.walk_test_env_cfg import LocomotionVelocityTestEnvCfg
-from MyProject.tasks.manager_based.NaviationTest.config.terrain import (
-    EASY_PIT_TERRAINS_CFG,
-    MEDIUM_PIT_TERRAINS_CFG,
-    HARD_PIT_TERRAINS_CFG,
-    MIXED_PIT_TERRAINS_CFG,
-)
+from source.MyProject.MyProject.tasks.manager_based.WalkTest.walk_rough_env_cfg import VelocityGo2WalkFlatEnvCfg
 
-LOW_LEVEL_ENV_CFG = LocomotionVelocityTestEnvCfg()
+LOW_LEVEL_ENV_CFG = VelocityGo2WalkFlatEnvCfg()
 #分层的强化学习的方式，低层的强化学习为之前已经训练好的在平地上行走的策略
 #如果需要训练好的话，这个层次的策略也应该训练好一点
 
@@ -54,12 +49,10 @@ class MySceneCfg(InteractiveSceneCfg):
     """Configuration for the terrain scene with a legged robot."""
 
     # ground terrain
-    # Single difficulty: EASY_PIT_TERRAINS_CFG, MEDIUM_PIT_TERRAINS_CFG, HARD_PIT_TERRAINS_CFG
-    # Mixed sampling: MIXED_PIT_TERRAINS_CFG (40% easy, 40% medium, 20% hard)
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
         terrain_type="generator",
-        terrain_generator=MIXED_PIT_TERRAINS_CFG,
+        terrain_generator=ROUGH_TERRAINS_CFG,
         max_init_terrain_level=5,
         collision_group=-1,
         physics_material=sim_utils.RigidBodyMaterialCfg(
@@ -74,6 +67,24 @@ class MySceneCfg(InteractiveSceneCfg):
             texture_scale=(0.25, 0.25),
         ),
         debug_vis=False,
+    )
+    # 平台
+    platform = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/Platform",
+        spawn=sim_utils.CuboidCfg(
+            size=(1.0, 1.0, 0.26),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(),
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.0),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(
+                diffuse_color=(0.0, 1.0, 0.0),  # 绿色平台
+                metallic=0.3,
+                roughness=0.5,
+            ),
+        ),
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=(2.0, 0.0, 0.13),
+        ),
     )
     # robots
     robot: ArticulationCfg = UNITREE_GO2_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
@@ -111,11 +122,7 @@ class CommandsCfg:
         simple_heading=False,
         resampling_time_range=(8.0, 8.0),
         debug_vis=True,
-        ranges=mdp.UniformPose2dCommandCfg.Ranges(
-            pos_x=(-3, 3),  # 减小范围，让目标更容易到达
-            pos_y=(-3, 3),  # 减小范围
-            heading=(-math.pi, math.pi)
-        ),
+        ranges=mdp.UniformPose2dCommandCfg.Ranges(pos_x=(-3.0, 3.0), pos_y=(-3.0, 3.0), heading=(-math.pi, math.pi)),
     )
 
 
@@ -147,29 +154,9 @@ class ObservationsCfg:
         """Observations for policy group."""
 
         # observation terms (order preserved)
-        # 基础运动状态 (6维)
-        base_lin_vel = ObsTerm(func=mdp.base_lin_vel)  # 3维: 线速度
-        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)  # 3维: 角速度
-
-        # 姿态信息 (3维)
-        projected_gravity = ObsTerm(func=mdp.projected_gravity)  # 3维: 重力投影向量
-
-        # 目标命令 (4维)
-        pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "pose_command"})  # 4维: x, y, z, heading
-
-        # 高度扫描 - 对爬台阶至关重要！
-        height_scan = ObsTerm(
-            func=mdp.height_scan,
-            params={"sensor_cfg": SceneEntityCfg("height_scanner")},
-            clip=(-1.0, 1.0),
-        )
-
-        # 上一时刻的动作 (3维: 高层策略输出给低层的速度命令)
-        actions = ObsTerm(func=mdp.last_action)
-
-        def __post_init__(self):
-            self.enable_corruption = False  # 高层策略不添加噪声
-            self.concatenate_terms = True
+        base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
+        projected_gravity = ObsTerm(func=mdp.projected_gravity)
+        pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "pose_command"})
 
     # observation groups
     policy: PolicyCfg = PolicyCfg()
@@ -197,101 +184,23 @@ class EventCfg:
 
 @configclass
 class RewardsCfg:
-    """Reward terms for the MDP - Pit Climbing Task."""
-
-    # ========== Primary Task Rewards (爬坑任务) ==========
-
-    # Progress reward (reduction in distance to target) - 最重要！
-    progress = RewTerm(
-        func=mdp.progress_reward,
-        weight=5.0,  # 增大权重，鼓励向目标移动
-        params={"command_name": "pose_command"},
-    )
-
-    # Position tracking rewards (coarse and fine-grained)
+    """Reward terms for the MDP."""
+    termination_penalty = RewTerm(func=mdp.is_terminated, weight=-400.0)
     position_tracking = RewTerm(
         func=mdp.position_command_error_tanh,
-        weight=1.0,
+        weight=0.5,
         params={"std": 2.0, "command_name": "pose_command"},
     )
-
     position_tracking_fine_grained = RewTerm(
         func=mdp.position_command_error_tanh,
-        weight=0.5,  # 减小权重，避免远距离时影响太大
-        params={"std": 0.5, "command_name": "pose_command"},  # 增大std，更宽容
+        weight=0.5,
+        params={"std": 0.2, "command_name": "pose_command"},
     )
-
-    # Orientation tracking
     orientation_tracking = RewTerm(
         func=mdp.heading_command_error_abs,
-        weight=-0.2,  # 减小权重，允许更多朝向探索
+        weight=-0.2,
         params={"command_name": "pose_command"},
     )
-
-    # Velocity aligned with target direction
-    velocity_alignment = RewTerm(
-        func=mdp.velocity_toward_target,
-        weight=1.0,  # 增大权重
-        params={"command_name": "pose_command"},
-    )
-
-    # Height climbing reward (near obstacles) - 爬坑关键！
-    height_climbing = RewTerm(
-        func=mdp.height_progress_near_obstacle,
-        weight=10.0,  # 大幅增加权重，鼓励爬升
-        params={"command_name": "pose_command", "height_threshold": 0.1, "distance_threshold": 1.5},
-    )
-
-    # ========== Regularization Penalties (减小权重，允许探索) ==========
-
-    # Joint position deviation (from default pose)
-    joint_position_penalty = RewTerm(
-        func=mdp.joint_position_penalty,
-        weight=-0.001,  # 减小10倍，允许更多关节运动
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*"])},
-    )
-
-    # Joint velocity penalty (encourages smooth motion)
-    joint_velocity_penalty = RewTerm(
-        func=mdp.joint_velocity_penalty,
-        weight=-0.0001,  # 减小10倍
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*"])},
-    )
-
-    # Action rate penalty (encourages smooth control)
-    action_rate_penalty = RewTerm(
-        func=mdp.action_rate_penalty,
-        weight=-0.001,  # 减小10倍，允许更大幅度动作
-    )
-
-    # Torque penalty (energy efficiency)
-    torque_penalty = RewTerm(
-        func=mdp.torque_penalty,
-        weight=-0.00002,  # 减小10倍
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*"])},
-    )
-
-    # Body linear acceleration penalty (prevents jerky motion)
-    body_acceleration_penalty = RewTerm(
-        func=mdp.body_linear_acceleration_penalty,
-        weight=-1.0e-7,  # 减小10倍
-        params={"asset_cfg": SceneEntityCfg("robot", body_names="base")},
-    )
-
-    # Orientation penalty (maintain upright posture)
-    orientation_penalty = RewTerm(
-        func=mdp.orientation_penalty,
-        weight=-0.02,  # 减小5倍，允许更多姿态变化
-    )
-
-    # Vertical velocity penalty (discourages excessive jumping)
-    vertical_velocity_penalty = RewTerm(
-        func=mdp.vertical_lin_vel_penalty,
-        weight=-0.1,  # 减小10倍！允许跳跃/攀爬动作
-    )
-
-    # Termination penalty
-    termination_penalty = RewTerm(func=mdp.is_terminated, weight=-100.0)  # 减小权重
 
 
 @configclass
@@ -317,12 +226,11 @@ class CurriculumCfg:
 ##
 
 @configclass
-class LocomotionNaviationTestEnvCfg(ManagerBasedRLEnvCfg):
+class LocomotionNaviationRoughEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for the navigation environment."""
 
     # environment settings
-    # scene: SceneEntityCfg = LOW_LEVEL_ENV_CFG.scene
-    scene: SceneEntityCfg = MySceneCfg(num_envs=4096, env_spacing=4)
+    scene: SceneEntityCfg = LOW_LEVEL_ENV_CFG.scene
     actions: ActionsCfg = ActionsCfg()
     observations: ObservationsCfg = ObservationsCfg()
     events: EventCfg = EventCfg()
@@ -338,8 +246,7 @@ class LocomotionNaviationTestEnvCfg(ManagerBasedRLEnvCfg):
         self.sim.render_interval = LOW_LEVEL_ENV_CFG.decimation
         self.decimation = LOW_LEVEL_ENV_CFG.decimation * 10
         self.episode_length_s = self.commands.pose_command.resampling_time_range[1]
-        # self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_range = (0.01, 0.06)
-        # self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_step = 0.01  
+
         if self.scene.height_scanner is not None:
             self.scene.height_scanner.update_period = (
                 self.actions.pre_trained_policy_action.low_level_decimation * self.sim.dt
@@ -347,7 +254,8 @@ class LocomotionNaviationTestEnvCfg(ManagerBasedRLEnvCfg):
         if self.scene.contact_forces is not None:
             self.scene.contact_forces.update_period = self.sim.dt
 
-class LocomotionNaviationTestEnvCfg_Play(LocomotionNaviationTestEnvCfg):
+
+class LocomotionNaviationRoughEnvCfg_Play(LocomotionNaviationRoughEnvCfg):
     def __post_init__(self) -> None:
         # post init of parent
         super().__post_init__()

@@ -8,6 +8,7 @@ from dataclasses import MISSING
 
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg
+from isaaclab.assets import RigidObject, RigidObjectCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.managers import CurriculumTermCfg as CurrTerm
 from isaaclab.managers import EventTermCfg as EventTerm
@@ -36,7 +37,7 @@ from isaaclab_assets.robots.unitree import UNITREE_GO2_CFG  # isort: skip
 ##
 
 import MyProject.tasks.manager_based.NaviationTest.mdp as mdp
-from MyProject.tasks.manager_based.WalkTest.walk_test_env_cfg import LocomotionVelocityTestEnvCfg
+from source.MyProject.MyProject.tasks.manager_based.WalkTest.walk_flat_env_cfg import LocomotionVelocityTestEnvCfg
 
 LOW_LEVEL_ENV_CFG = LocomotionVelocityTestEnvCfg()
 #分层的强化学习的方式，低层的强化学习为之前已经训练好的在平地上行走的策略
@@ -66,6 +67,24 @@ class MySceneCfg(InteractiveSceneCfg):
             texture_scale=(0.25, 0.25),
         ),
         debug_vis=False,
+    )
+    # 平台
+    platform = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/Platform",
+        spawn=sim_utils.CuboidCfg(
+            size=(1.0, 1.0, 0.26),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(),
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.0),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(
+                diffuse_color=(0.0, 1.0, 0.0),  # 绿色平台
+                metallic=0.3,
+                roughness=0.5,
+            ),
+        ),
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=(2.0, 0.0, 0.13),
+        ),
     )
     # robots
     robot: ArticulationCfg = UNITREE_GO2_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
@@ -207,7 +226,7 @@ class CurriculumCfg:
 ##
 
 @configclass
-class LocomotionNaviationTestEnvCfg(ManagerBasedRLEnvCfg):
+class LocomotionNaviationFlatEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for the navigation environment."""
 
     # environment settings
@@ -236,7 +255,7 @@ class LocomotionNaviationTestEnvCfg(ManagerBasedRLEnvCfg):
             self.scene.contact_forces.update_period = self.sim.dt
 
 
-class LocomotionNaviationTestEnvCfg_Play(LocomotionNaviationTestEnvCfg):
+class LocomotionNaviationFlatEnvCfg_Play(LocomotionNaviationFlatEnvCfg):
     def __post_init__(self) -> None:
         # post init of parent
         super().__post_init__()

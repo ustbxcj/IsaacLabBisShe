@@ -312,27 +312,23 @@ class VelocityGo2WalkRoughEnvCfg(ManagerBasedRLEnvCfg):
         self.sim.render_interval = self.decimation
         self.sim.physics_material = self.scene.terrain.physics_material
         self.sim.physx.gpu_max_rigid_patch_count = 10 * 2**15
-        #1.
+        # Scale down terrain for smaller robot
         self.scene.terrain.terrain_generator.sub_terrains["boxes"].grid_height_range = (0.025, 0.1)
         self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_range = (0.01, 0.06)
-        self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_step = 0.01  
-        #2.
+        self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_step = 0.01
+        # Disable push robot event for stability
         self.events.push_robot = None
-        # #3.
+        # Disable base COM randomization
         self.events.base_com = None
-        # #4.
+        # Disable undesired contacts penalty
         self.rewards.undesired_contacts = None
-        #5.
-        # change terrain to flat
+        # Flat terrain settings (commented out for rough terrain)
         # self.scene.terrain.terrain_type = "plane"
         # self.scene.terrain.terrain_generator = None
-        # no height scan
-
+        # Disable height scan (optional, for flat terrain)
         # self.scene.height_scanner = None
         # self.observations.policy.height_scan = None
-        
-        # no terrain curriculum
-        
+        # Disable terrain curriculum (optional, for flat terrain)
         # self.curriculum.terrain_levels = None
 
         # update sensor update periods

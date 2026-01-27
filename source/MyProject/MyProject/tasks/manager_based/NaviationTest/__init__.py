@@ -11,50 +11,52 @@ from . import agents
 # Register Gym environments.
 ##
 
+####################################粗糙地形的设置#####################################
 
 gym.register(
-    id="Template-Naviation-Test-Unitree-Go2-v0",
+    id="Template-Naviation-Rough-Go2-v0",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.naviation_test_env_cfg:LocomotionNaviationTestEnvCfg",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:NaviationTestPPORunnerCfg",
-        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_nav_test_ppo_cfg.yaml",
+        "env_cfg_entry_point": f"{__name__}.naviation_rough_env_cfg:LocomotionNaviationRoughEnvCfg",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:NaviationRoughPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_nav_rough_ppo_cfg.yaml",
     },
 )
 
 
 gym.register(
-    id="Template-Naviation-Test-Unitree-Go2-Play-v0",
+    id="Template-Naviation-Rough-Go2-Play-v0",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.naviation_test_env_cfg:LocomotionNaviationTestEnvCfg_Play",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:NaviationTestPPORunnerCfg",
-        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_nav_test_ppo_cfg.yaml",
+        "env_cfg_entry_point": f"{__name__}.naviation_rough_env_cfg:LocomotionNaviationRoughEnvCfg_Play",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:NaviationRoughPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_nav_rough_ppo_cfg.yaml",
+    },
+)
+
+####################################平坦地形的设置#####################################
+
+gym.register(
+    id="Template-Naviation-Flat-Go2-v0",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.naviation_flat_env_cfg:LocomotionNaviationFlatEnvCfg",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:NaviationFlatPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_nav_flat_ppo_cfg.yaml",
     },
 )
 
 
 gym.register(
-    id="Template-Naviation-Fun-Unitree-Go2-v0",
+    id="Template-Naviation-Flat-Go2-Play-v0",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.naviation_fun_env_cfg:NaviFunTaskEnvCfg",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_fun_cfg:NaviationFunPPORunnerCfg",
-        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_nav_fun_ppo_cfg.yaml",
-    },
-)
-
-
-gym.register(
-    id="Template-Naviation-Fun-Unitree-Go2-Play-v0",
-    entry_point="isaaclab.envs:ManagerBasedRLEnv",
-    disable_env_checker=True,
-    kwargs={
-        "env_cfg_entry_point": f"{__name__}.naviation_fun_env_cfg:NaviFunTaskEnvCfg_Play",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_fun_cfg:NaviationFunPPORunnerCfg",
-        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_nav_fun_ppo_cfg.yaml",
+        "env_cfg_entry_point": f"{__name__}.naviation_flat_env_cfg:LocomotionNaviationFlatEnvCfg_Play",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:NaviationFlatPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_nav_flat_ppo_cfg.yaml",
     },
 )

@@ -9,11 +9,11 @@ from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlPpoActorCriticCfg, R
 
 
 @configclass
-class NaviationTestPPORunnerCfg(RslRlOnPolicyRunnerCfg):
+class NaviationRoughPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 8
     max_iterations = 1500
     save_interval = 50
-    experiment_name = "naviation_test"
+    experiment_name = "naviation_rough"
     policy = RslRlPpoActorCriticCfg(
         init_noise_std=0.5,
         actor_obs_normalization=False,
@@ -37,4 +37,10 @@ class NaviationTestPPORunnerCfg(RslRlOnPolicyRunnerCfg):
         max_grad_norm=1.0,
     )
 
+@configclass
+class NaviationFlatPPORunnerCfg(NaviationRoughPPORunnerCfg):
+    def __post_init__(self):
+        super().__post_init__()
+
+        self.experiment_name = "naviation_flat"
 
