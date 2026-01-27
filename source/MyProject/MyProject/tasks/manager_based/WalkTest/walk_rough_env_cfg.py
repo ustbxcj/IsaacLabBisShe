@@ -287,7 +287,7 @@ class CurriculumCfg:
 
 
 @configclass
-class LocomotionVelocityTestEnvCfg(ManagerBasedRLEnvCfg):
+class VelocityGo2WalkRoughEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for the locomotion velocity-tracking environment."""
 
     # Scene settings
@@ -353,7 +353,7 @@ class LocomotionVelocityTestEnvCfg(ManagerBasedRLEnvCfg):
 
 
 @configclass
-class LocomotionVelocityTestEnvCfg_Play(LocomotionVelocityTestEnvCfg):
+class VelocityGo2WalkRoughEnvCfg_Play(VelocityGo2WalkRoughEnvCfg):
     """Configuration for the locomotion velocity-tracking environment."""
     def __post_init__(self) -> None:
         # post init of parent
@@ -380,7 +380,7 @@ class LocomotionVelocityTestEnvCfg_Play(LocomotionVelocityTestEnvCfg):
 
 
 @configclass
-class LocomotionVelocityTestEnvCfg_Ros(LocomotionVelocityTestEnvCfg_Play):
+class VelocityGo2WalkRoughEnvCfg_Ros(VelocityGo2WalkRoughEnvCfg_Play):
     """Configuration for the locomotion velocity-tracking environment."""
     def __post_init__(self) -> None:
         # post init of parent

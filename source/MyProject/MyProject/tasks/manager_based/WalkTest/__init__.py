@@ -11,38 +11,74 @@ from . import agents
 # Register Gym environments.
 ##
 
-
+####################################粗糙地形的设置#####################################
 gym.register(
-    id="Template-Velocity-Test-Unitree-Go2-v0",
+    id="Template-Velocity-Go2-Walk-Rough-v0",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.walk_test_env_cfg:LocomotionVelocityTestEnvCfg",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2TestPPORunnerCfg",
-        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_test_ppo_cfg.yaml",
+        "env_cfg_entry_point": f"{__name__}.walk_rough_env_cfg:VelocityGo2WalkRoughEnvCfg",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:Go2WalkRoughPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_walk_rough_ppo_cfg.yaml",
     },
 )
 
 
 
 gym.register(
-    id="Template-Velocity-Test-Unitree-Go2-Play-v0",
+    id="Template-Velocity-Go2-Walk-Rough-Play-v0",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.walk_test_env_cfg:LocomotionVelocityTestEnvCfg_Play",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2TestPPORunnerCfg",
-        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_test_ppo_cfg.yaml",
+        "env_cfg_entry_point": f"{__name__}.walk_rough_env_cfg:VelocityGo2WalkRoughEnvCfg_Play",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:Go2WalkRoughPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_walk_rough_ppo_cfg.yaml",
     },
 )
 
 gym.register(
-    id="Template-Velocity-Test-Unitree-Go2-Ros-v0",
+    id="Template-Velocity-Go2-Walk-Rough-Ros-v0",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.walk_test_env_cfg:LocomotionVelocityTestEnvCfg_Play",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2TestPPORunnerCfg",
-        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_test_ppo_cfg.yaml",
+        "env_cfg_entry_point": f"{__name__}.walk_rough_env_cfg:VelocityGo2WalkRoughEnvCfg_Ros",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:Go2WalkRoughPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_walk_rough_ppo_cfg.yaml",
+    },
+)
+
+####################################平坦地形的设置#####################################
+gym.register(
+    id="Template-Velocity-Go2-Walk-Flat-v0",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.walk_flat_env_cfg:VelocityGo2WalkFlatEnvCfg",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:Go2WalkFlatPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_walk_flat_ppo_cfg.yaml",
+    },
+)
+
+
+
+gym.register(
+    id="Template-Velocity-Go2-Walk-Flat-Play-v0",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.walk_flat_env_cfg:VelocityGo2WalkFlatEnvCfg_Play",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:Go2WalkFlatPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_walk_flat_ppo_cfg.yaml",
+    },
+)
+
+gym.register(
+    id="Template-Velocity-Go2-Walk-Flat-Ros-v0",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.walk_flat_env_cfg:VelocityGo2WalkFlatEnvCfg_Ros",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:Go2WalkFlatPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_walk_flat_ppo_cfg.yaml",
     },
 )
