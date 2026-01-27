@@ -377,3 +377,11 @@ class LocomotionVelocityTestEnvCfg_Play(LocomotionVelocityTestEnvCfg):
         # remove random pushing event
         self.events.base_external_force_torque = None
         self.events.push_robot = None
+
+
+@configclass
+class LocomotionVelocityTestEnvCfg_Ros(LocomotionVelocityTestEnvCfg_Play):
+    """Configuration for the locomotion velocity-tracking environment."""
+    def __post_init__(self) -> None:
+        # post init of parent
+        super().__post_init__()
