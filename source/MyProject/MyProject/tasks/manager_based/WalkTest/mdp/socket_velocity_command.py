@@ -68,6 +68,10 @@ class SocketVelocityCommand(CommandTerm):
         # heading target buffer (used if heading_command is True)
         self.heading_target = torch.zeros(self.num_envs, device=self.device)
 
+        # standing environment buffer (for training stability)
+        # Matches original implementation where some envs randomly stand still
+        self.is_standing_env = torch.zeros(self.num_envs, device=self.device, dtype=torch.bool)
+
         # Initialize socket server
         self._socket = None
         self._socket_thread = None
@@ -128,8 +132,19 @@ class SocketVelocityCommand(CommandTerm):
         )
 
     def _resample_command(self, env_ids):
-        # Commands are received continuously from socket
-        pass
+        """Resample which environments should be standing.
+
+        This randomly selects some environments (based on rel_standing_envs probability)
+        to have zero velocity command. This matches the original implementation and
+        is important for training stability.
+
+        Args:
+            env_ids: Environment IDs to resample.
+        """
+        if len(env_ids) > 0:
+            # Randomly select some environments to be standing
+            r = torch.empty(len(env_ids), device=self.device)
+            self.is_standing_env[env_ids] = r.uniform_(0.0, 1.0) <= self.cfg.rel_standing_envs
 
     def _update_command(self):
         """Update velocity command from socket.
@@ -184,12 +199,22 @@ class SocketVelocityCommand(CommandTerm):
                 max=self.cfg.ranges.ang_vel_z[1]))
             self.vel_command_b[:, 2] = ang_z
 
+        # Enforce standing (i.e., zero velocity command) for standing envs
+        # This matches the original implementation and is important for stability
+        standing_env_ids = self.is_standing_env.nonzero(as_tuple=False).flatten()
+        self.vel_command_b[standing_env_ids, :] = 0.0
+
         # Log for debugging (only log periodically to avoid spam)
         if not hasattr(self, '_log_counter'):
             self._log_counter = 0
         self._log_counter += 1
         if self._log_counter % 100 == 0:  # Log every 100 iterations
-            logger.info(f"Socket command updated: lin_x={lin_x:.3f}, lin_y={lin_y:.3f}, ang_z={ang_z:.3f}")
+            # Convert tensor to scalar for logging (take first environment's value)
+            if hasattr(ang_z, 'shape') and len(ang_z.shape) > 0:
+                ang_z_scalar = ang_z[0].item()  # Take first environment
+            else:
+                ang_z_scalar = float(ang_z)
+            logger.info(f"Socket command updated: lin_x={lin_x:.3f}, lin_y={lin_y:.3f}, ang_z={ang_z_scalar:.3f}")
 
     def _set_debug_vis_impl(self, debug_vis: bool):
         # Debug visualization not implemented

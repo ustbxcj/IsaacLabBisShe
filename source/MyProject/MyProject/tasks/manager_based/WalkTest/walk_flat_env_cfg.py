@@ -54,14 +54,15 @@ class VelocityGo2WalkFlatEnvCfg_Ros(VelocityGo2WalkFlatEnvCfg_Play):
 
         # Replace with socket velocity command
         # This listens on UDP port 5555 for velocity commands (format: "lin_x,lin_y,ang_z")
+        # Using angular velocity mode (direct control)
         self.commands.base_velocity = SocketVelocityCommandCfg(
             asset_name="robot",
             port=5555,
-            heading_command=False,
+            heading_command=False,               # 使用角速度模式（直接控制）
             heading_control_stiffness=0.5,
             debug_vis=True,
             ranges=SocketVelocityCommandCfg.Ranges(
-                lin_vel_x=(-1.0, 1.0),
+                lin_vel_x=(-1.0, 1.0),           # 恢复原来的速度范围
                 lin_vel_y=(-1.0, 1.0),
                 ang_vel_z=(-1.0, 1.0),
                 heading=(-math.pi, math.pi),

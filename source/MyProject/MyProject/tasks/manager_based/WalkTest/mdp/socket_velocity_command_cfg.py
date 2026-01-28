@@ -45,6 +45,13 @@ class SocketVelocityCommandCfg(CommandTermCfg):
     debug_vis: bool = True
     """Whether to enable debug visualization. Defaults to True."""
 
+    rel_standing_envs: float = 0.02
+    """Probability of resampling a standing environment (zero velocity). Defaults to 0.02 (2%).
+
+    This randomly sets some environments to have zero velocity command, which is important
+    for training stability. The original implementation uses this value.
+    """
+
     @configclass
     class Ranges:
         """Ranges for clipping the velocity commands."""
@@ -69,5 +76,7 @@ class SocketVelocityCommandCfg(CommandTermCfg):
 
     def __post_init__(self):
         """Post initialization."""
-        # Set the resampling time range to a very large value
-        self.resampling_time_range = (1e6, 1e6)
+        # Set the resampling time range to 10 seconds (matches original implementation)
+        # This ensures standing environments are periodically refreshed for stability
+        # Socket commands are still updated every step in _update_command()
+        self.resampling_time_range = (10.0, 10.0)

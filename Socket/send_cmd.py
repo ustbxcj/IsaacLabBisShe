@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Minimal socket command sender for testing.
+"""Socket command sender for testing - Angular velocity mode.
 
 Usage:
     python send_cmd.py
@@ -24,11 +24,13 @@ class SocketCommandSender:
         # 创建一次 socket，重复使用
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         print(f"Connected to {host}:{port}")
+        print("Mode: Angular Velocity (direct control)")
 
     def send_command(self, lin_x, lin_y, ang_z):
-        """Send velocity command via UDP socket."""
+        """Send velocity command via UDP socket (angular velocity mode)."""
         message = f"{lin_x},{lin_y},{ang_z}"
         self.sock.sendto(message.encode('utf-8'), (self.host, self.port))
+        print(f"Sent: lin_x={lin_x:.2f}, lin_y={lin_y:.2f}, ang_z={ang_z:.2f}")
 
     def close(self):
         """关闭 socket"""
@@ -53,20 +55,24 @@ def main():
     print("="*50)
     print("Socket Command Sender (Keyboard Control)")
     print("="*50)
+    print("Mode: Angular Velocity (direct control)")
+    print("="*50)
     print("Controls:")
     print("  W - Forward")
     print("  S - Backward")
     print("  A - Left")
     print("  D - Right")
-    print("  Q - Turn Left")
-    print("  E - Turn Right")
+    print("  Q - Rotate Left")
+    print("  E - Rotate Right")
     print("  Space - Stop")
     print("  ESC - Quit")
     print("="*50)
     print("\nPress keys to control robot...")
+    print("NOTE: In angular velocity mode, Q/E continuously rotate.\n")
 
     # 当前命令状态
     current_cmd = [0.0, 0.0, 0.0]  # [lin_x, lin_y, ang_z]
+    last_sent_cmd = None
 
     try:
         while True:
@@ -94,20 +100,22 @@ def main():
 
             elif key.lower() == 'q':
                 current_cmd = [0.0, 0.0, 0.5]
-                print("Turn Left")
+                print("Rotate Left")
 
             elif key.lower() == 'e':
                 current_cmd = [0.0, 0.0, -0.5]
-                print("Turn Right")
+                print("Rotate Right")
 
             elif key == ' ':  # Space
                 current_cmd = [0.0, 0.0, 0.0]
                 print("Stop")
 
-            # 发送当前命令
-            sender.send_command(*current_cmd)
+            # 只在命令改变时发送，避免重复发送相同命令
+            if last_sent_cmd != current_cmd:
+                sender.send_command(*current_cmd)
+                last_sent_cmd = current_cmd.copy()
 
-            # 短暂延迟，避免发送过快
+            # 短暂延迟
             time.sleep(0.05)
 
     except KeyboardInterrupt:
@@ -116,6 +124,7 @@ def main():
     finally:
         # 停止机器人
         sender.send_command(0.0, 0.0, 0.0)
+        time.sleep(0.1)
         sender.close()
 
 if __name__ == "__main__":
