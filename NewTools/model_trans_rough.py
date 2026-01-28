@@ -30,20 +30,20 @@ from isaaclab_rl.rsl_rl import RslRlVecEnvWrapper
 # 3. 导入你的 task / cfg（使用正确的相对路径）
 # =========================
 # 注意：现在 source 目录已经在 sys.path 中
-from MyProject.tasks.manager_based.WalkTest.walk_test_env_cfg import (
-    LocomotionVelocityTestEnvCfg,
+from MyProject.tasks.manager_based.WalkTest.walk_rough_env_cfg import (
+    VelocityGo2WalkRoughEnvCfg,
 )
 
 # from MyProject.tasks.manager_based.NaviationTest.naviation_test_env_cfg import (
     # LocomotionNaviationTestEnvCfg,
 # )
-from MyProject.tasks.manager_based.WalkTest.agents.rsl_rl_ppo_cfg import UnitreeGo2TestPPORunnerCfg
+from MyProject.tasks.manager_based.WalkTest.agents.rsl_rl_ppo_cfg import Go2WalkRoughPPORunnerCfg
 # from MyProject.tasks.manager_based.NaviationTest.agents.rsl_rl_ppo_cfg import NaviationTestPPORunnerCfg
-TASK_NAME = "Template-Velocity-Test-Unitree-Go2-v0"
+TASK_NAME = "Template-Velocity-Go2-Walk-Rough-v0"
 #这个也得修改任务
 # TASK_NAME = "Template-Naviation-Test-Unitree-Go2-v0"
-# CHECKPOINT_PATH = "/home/xcj/work/IsaacLab/BiShe/MyProject/ModelBackup/Rough_Walk_policy_Simple.pt"
-# OUTPUT_TS_PATH = "/home/xcj/work/IsaacLab/BiShe/MyProject/ModelBackup/Rough_Walk_policy_Simple_Transfer.pt"
+CHECKPOINT_PATH = "/home/xcj/work/IsaacLab/IsaacLabBisShe/ModelBackup/New/WalkRoughNew.pt"
+OUTPUT_TS_PATH = "/home/xcj/work/IsaacLab/IsaacLabBisShe/ModelBackup/New/WalkRoughNewTransfer.pt"
 
 # =========================
 # 4. 构建 env 和 agent cfg
@@ -51,8 +51,8 @@ TASK_NAME = "Template-Velocity-Test-Unitree-Go2-v0"
 # env_cfg = LocomotionNaviationTestEnvCfg()
 # agent_cfg = NaviationTestPPORunnerCfg()
 #修改环境和智能体配置
-env_cfg = LocomotionVelocityTestEnvCfg()
-agent_cfg = UnitreeGo2TestPPORunnerCfg()
+env_cfg = VelocityGo2WalkRoughEnvCfg()
+agent_cfg = Go2WalkRoughPPORunnerCfg()
 # 这里需要修改
 
 env = gym.make(TASK_NAME, cfg=env_cfg)

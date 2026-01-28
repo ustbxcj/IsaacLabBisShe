@@ -37,9 +37,9 @@ from isaaclab_assets.robots.unitree import UNITREE_GO2_CFG  # isort: skip
 ##
 
 import MyProject.tasks.manager_based.NaviationTest.mdp as mdp
-from source.MyProject.MyProject.tasks.manager_based.WalkTest.walk_flat_env_cfg import LocomotionVelocityTestEnvCfg
+from MyProject.tasks.manager_based.WalkTest.walk_flat_env_cfg import VelocityGo2WalkFlatEnvCfg
 
-LOW_LEVEL_ENV_CFG = LocomotionVelocityTestEnvCfg()
+LOW_LEVEL_ENV_CFG = VelocityGo2WalkFlatEnvCfg()
 #分层的强化学习的方式，低层的强化学习为之前已经训练好的在平地上行走的策略
 #如果需要训练好的话，这个层次的策略也应该训练好一点
 
@@ -133,7 +133,7 @@ class ActionsCfg:
     # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.25, use_default_offset=True)
     pre_trained_policy_action: mdp.PreTrainedPolicyActionCfg = mdp.PreTrainedPolicyActionCfg(
         asset_name="robot",
-        policy_path="/home/xcj/work/IsaacLab/BiShe/MyProject/ModelBackup/Rough_Walk_policy_Transfer.pt",
+        policy_path="/home/xcj/work/IsaacLab/IsaacLabBisShe/ModelBackup/New/WalkFlatNewTransfer.pt",
         # policy_path=f"{ISAACLAB_NUCLEUS_DIR}/Policies/ANYmal-C/Blind/policy.pt",
         #This
         # policy_path=f"{ISAACLAB_NUCLEUS_DIR}/Policies/ANYmal-C/Blind/policy.pt",
