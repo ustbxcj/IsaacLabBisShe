@@ -52,19 +52,31 @@ class VelocityGo2WalkFlatEnvCfg_Ros(VelocityGo2WalkFlatEnvCfg_Play):
         # post init of parent
         super().__post_init__()
 
-        # Replace with socket velocity command
-        # This listens on UDP port 5555 for velocity commands (format: "lin_x,lin_y,ang_z")
-        # Using angular velocity mode (direct control)
+        # Define socket command values (updated when socket receives "lin_x,lin_y,ang_z")
+        socket_vx = 0.0  # Default, socket will update this
+        socket_vy = 0.0  # Default, socket will update this
+        socket_wz = 0.0  # Default, socket will update this
+
+        # Socket velocity command - inherits UniformVelocityCommand behavior
+        # When socket receives "0.5,0.0,0.0", it updates:
+        #   socket_vx=0.5, socket_vy=0.0, socket_wz=0.0
+        # And ranges become: lin_vel_x=(0.5,0.5), lin_vel_y=(0.0,0.0), ang_vel_z=(0.0,0.0)
         self.commands.base_velocity = SocketVelocityCommandCfg(
             asset_name="robot",
             port=5555,
-            heading_command=False,               # 使用角速度模式（直接控制）
+            resampling_time_range=(10.0, 10.0),
+            rel_standing_envs=0.02,
+            rel_heading_envs=1.0,
+            heading_command=True,               # 使用角速度模式（直接控制）
             heading_control_stiffness=0.5,
             debug_vis=True,
+            socket_vx=socket_vx,
+            socket_vy=socket_vy,
+            socket_wz=socket_wz,
             ranges=SocketVelocityCommandCfg.Ranges(
-                lin_vel_x=(-1.0, 1.0),           # 恢复原来的速度范围
-                lin_vel_y=(-1.0, 1.0),
-                ang_vel_z=(-1.0, 1.0),
+                lin_vel_x=(socket_vx, socket_vx),
+                lin_vel_y=(socket_vy, socket_vy),
+                ang_vel_z=(socket_wz, socket_wz),
                 heading=(-math.pi, math.pi),
             ),
         )
