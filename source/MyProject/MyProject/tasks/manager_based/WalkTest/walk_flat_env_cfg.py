@@ -3,9 +3,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import math
 from isaaclab.utils import configclass
 
 from .walk_rough_env_cfg import VelocityGo2WalkRoughEnvCfg
+from .mdp import SocketVelocityCommandCfg
 
 
 @configclass
@@ -49,3 +51,19 @@ class VelocityGo2WalkFlatEnvCfg_Ros(VelocityGo2WalkFlatEnvCfg_Play):
     def __post_init__(self) -> None:
         # post init of parent
         super().__post_init__()
+
+        # Replace with socket velocity command
+        # This listens on UDP port 5555 for velocity commands (format: "lin_x,lin_y,ang_z")
+        self.commands.base_velocity = SocketVelocityCommandCfg(
+            asset_name="robot",
+            port=5555,
+            heading_command=False,
+            heading_control_stiffness=0.5,
+            debug_vis=True,
+            ranges=SocketVelocityCommandCfg.Ranges(
+                lin_vel_x=(-1.0, 1.0),
+                lin_vel_y=(-1.0, 1.0),
+                ang_vel_z=(-1.0, 1.0),
+                heading=(-math.pi, math.pi),
+            ),
+        )
