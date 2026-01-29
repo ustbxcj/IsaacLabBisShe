@@ -26,22 +26,39 @@ if TYPE_CHECKING:
 def feet_air_time(
     env: ManagerBasedRLEnv, command_name: str, sensor_cfg: SceneEntityCfg, threshold: float
 ) -> torch.Tensor:
-    """Reward long steps taken by the feet using L2-kernel.
+    """Reward long steps taken by feet using L2-kernel.
 
     This function rewards the agent for taking steps that are longer than a threshold. This helps ensure
     that the robot lifts its feet off the ground and takes steps. The reward is computed as the sum of
-    the time for which the feet are in the air.
+    time for which the feet are in the air.
 
-    If the commands are small (i.e. the agent is not supposed to take a step), then the reward is zero.
+    If commands are small (i.e. agent is not supposed to take a step), then the reward is zero.
     """
-    # extract the used quantities (to enable type-hinting)
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # extract used quantities (to enable type-hinting)
     contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
-    # compute the reward
+    # compute reward
     first_contact = contact_sensor.compute_first_contact(env.step_dt)[:, sensor_cfg.body_ids]
     last_air_time = contact_sensor.data.last_air_time[:, sensor_cfg.body_ids]
     reward = torch.sum((last_air_time - threshold) * first_contact, dim=1)
+    
+    # DEBUG: Log command norm statistics
+    command = env.command_manager.get_command(command_name)
+    command_norm = torch.norm(command[:, :2], dim=1)
+    command_norm_mean = command_norm.mean().item()
+    zero_reward_mask = command_norm <= 0.1
+    num_zero_reward = zero_reward_mask.sum().item()
+    
+    # Log every 100 steps
+    if hasattr(env, 'episode_length_buf'):
+        current_step = env.common_step_counter if hasattr(env, 'common_step_counter') else 0
+        if current_step % 100 == 0:
+            logger.info(f"[DEBUG] feet_air_time - Command norm mean: {command_norm_mean:.4f}, threshold: 0.1, zero reward envs: {num_zero_reward}/{len(command_norm)}")
+    
     # no reward for zero command
-    reward *= torch.norm(env.command_manager.get_command(command_name)[:, :2], dim=1) > 0.1
+    reward *= command_norm > 0.1
     return reward
 
 

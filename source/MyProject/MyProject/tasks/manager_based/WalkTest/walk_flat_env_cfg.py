@@ -8,6 +8,7 @@ from isaaclab.utils import configclass
 
 from .walk_rough_env_cfg import VelocityGo2WalkRoughEnvCfg
 from .mdp import SocketVelocityCommandCfg
+import isaaclab_tasks.manager_based.locomotion.velocity.mdp as mdp
 
 
 @configclass
@@ -44,6 +45,18 @@ class VelocityGo2WalkFlatEnvCfg_Play(VelocityGo2WalkFlatEnvCfg):
         # remove random pushing event
         self.events.base_external_force_torque = None
         self.events.push_robot = None
+        # self.commands.base_velocity = mdp.UniformVelocityCommandCfg(
+        #     asset_name="robot",
+        #     resampling_time_range=(10.0, 10.0),
+        #     rel_standing_envs=0.00,
+        #     rel_heading_envs=1.0,
+        #     heading_command=False,
+        #     heading_control_stiffness=0.5,
+        #     debug_vis=True,
+        #     ranges=mdp.UniformVelocityCommandCfg.Ranges(
+        #         lin_vel_x=(0.4, 0.6), lin_vel_y=(-0.1, 0.1), ang_vel_z=(-0.1, 0.1), heading=(-math.pi, math.pi)
+        #     ),
+        # )
 
 
 @configclass
@@ -56,7 +69,7 @@ class VelocityGo2WalkFlatEnvCfg_Ros(VelocityGo2WalkFlatEnvCfg_Play):
         socket_vx = 0.0  # Default, socket will update this
         socket_vy = 0.0  # Default, socket will update this
         socket_wz = 0.0  # Default, socket will update this
-
+        self.scene.num_envs = 1
         # Socket velocity command - inherits UniformVelocityCommand behavior
         # When socket receives "0.5,0.0,0.0", it updates:
         #   socket_vx=0.5, socket_vy=0.0, socket_wz=0.0
@@ -64,15 +77,18 @@ class VelocityGo2WalkFlatEnvCfg_Ros(VelocityGo2WalkFlatEnvCfg_Play):
         self.commands.base_velocity = SocketVelocityCommandCfg(
             asset_name="robot",
             port=5555,
-            resampling_time_range=(10.0, 10.0),
-            rel_standing_envs=0.02,
+            resampling_time_range=(0.5, 0.5),  # Slower resampling (0.5s) for stability
+            rel_standing_envs=0.00,
             rel_heading_envs=1.0,
-            heading_command=True,               # 使用角速度模式（直接控制）
+            heading_command=False,              # 使用角速度模式（直接控制）
             heading_control_stiffness=0.5,
             debug_vis=True,
             socket_vx=socket_vx,
             socket_vy=socket_vy,
             socket_wz=socket_wz,
+            add_command_noise=True,           # Enable noise for policy compatibility
+            noise_scale=0.25,                # Increased noise magnitude (±0.25 m/s)
+            use_sinusoidal_variation=False,    # Use random noise
             ranges=SocketVelocityCommandCfg.Ranges(
                 lin_vel_x=(socket_vx, socket_vx),
                 lin_vel_y=(socket_vy, socket_vy),

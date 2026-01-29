@@ -19,3 +19,9 @@ class SocketVelocityCommandCfg(UniformVelocityCommandCfg):
     socket_vx: float = 0.0
     socket_vy: float = 0.0
     socket_wz: float = 0.0
+    
+    # Command transformation settings for policy compatibility
+    add_command_noise: bool = True       # Add small noise to fixed commands
+    noise_scale: float = 0.05            # Noise magnitude (±0.05 m/s)
+    use_sinusoidal_variation: bool = False  # Use smooth variation instead of random noise
+    variation_amp: float = 0.03          # Amplitude of sinusoidal variation
