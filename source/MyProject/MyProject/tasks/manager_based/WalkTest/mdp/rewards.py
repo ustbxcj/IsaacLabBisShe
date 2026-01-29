@@ -55,7 +55,7 @@ def feet_air_time(
     if hasattr(env, 'episode_length_buf'):
         current_step = env.common_step_counter if hasattr(env, 'common_step_counter') else 0
         if current_step % 100 == 0:
-            logger.info(f"[DEBUG] feet_air_time - Command norm mean: {command_norm_mean:.4f}, threshold: 0.1, zero reward envs: {num_zero_reward}/{len(command_norm)}")
+            print(f"[DEBUG] feet_air_time - Command norm mean: {command_norm_mean:.4f}, threshold: 0.1, zero reward envs: {num_zero_reward}/{len(command_norm)}")
     
     # no reward for zero command
     reward *= command_norm > 0.1

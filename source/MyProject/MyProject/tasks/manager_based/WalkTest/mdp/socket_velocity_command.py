@@ -46,9 +46,9 @@ class SocketVelocityCommand(UniformVelocityCommand):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.bind(('127.0.0.1', self.cfg.port))
             threading.Thread(target=self._receive_loop, args=(sock,), daemon=True).start()
-            logger.info(f"✓ Socket listening on port {self.cfg.port}")
+            print(f"✓ Socket listening on port {self.cfg.port}")
         except Exception as e:
-            logger.error(f"✗ Socket init failed: {e}")
+            print(f"✗ Socket init failed: {e}")
 
     def _receive_loop(self, sock):
         while True:
@@ -66,7 +66,7 @@ class SocketVelocityCommand(UniformVelocityCommand):
                     self.cfg.ranges.lin_vel_y = (self.cfg.socket_vy, self.cfg.socket_vy)
                     self.cfg.ranges.ang_vel_z = (self.cfg.socket_wz, self.cfg.socket_wz)
 
-                    logger.info(f"Command: {self.cfg.socket_vx:.2f}, {self.cfg.socket_vy:.2f}, {self.cfg.socket_wz:.2f}")
+                    print(f"[Socket] Command: {self.cfg.socket_vx:.2f}, {self.cfg.socket_vy:.2f}, {self.cfg.socket_wz:.2f}")
             except Exception as e:
                 logger.error(f"Receive error: {e}")
 
@@ -116,11 +116,18 @@ class SocketVelocityCommand(UniformVelocityCommand):
             actual_vx_mean = self.vel_command_b[env_ids, 0].mean().item()
             actual_vy_mean = self.vel_command_b[env_ids, 1].mean().item()
             actual_wz_mean = self.vel_command_b[env_ids, 2].mean().item()
-            actual_vx_std = self.vel_command_b[env_ids, 0].std().item()
-            actual_vy_std = self.vel_command_b[env_ids, 1].std().item()
-            actual_wz_std = self.vel_command_b[env_ids, 2].std().item()
-            logger.info(f"[DEBUG] Fixed Command - Target: ({target_vx:.3f}, {target_vy:.3f}, {target_wz:.3f}), Noise scale: ±{self.noise_scale:.3f}")
-            logger.info(f"[DEBUG] Fixed Command - Actual: vx={actual_vx_mean:.3f}±{actual_vx_std:.3f}, vy={actual_vy_mean:.3f}±{actual_vy_std:.3f}, wz={actual_wz_mean:.3f}±{actual_wz_std:.3f}")
+            
+            if len(env_ids) > 1:
+                actual_vx_std = self.vel_command_b[env_ids, 0].std().item()
+                actual_vy_std = self.vel_command_b[env_ids, 1].std().item()
+                actual_wz_std = self.vel_command_b[env_ids, 2].std().item()
+            else:
+                actual_vx_std = 0.0
+                actual_vy_std = 0.0
+                actual_wz_std = 0.0
+            
+            print(f"[DEBUG] Fixed Command - Target: ({target_vx:.3f}, {target_vy:.3f}, {target_wz:.3f}), Noise scale: ±{self.noise_scale:.3f}")
+            print(f"[DEBUG] Fixed Command - Actual: vx={actual_vx_mean:.3f}±{actual_vx_std:.3f}, vy={actual_vy_mean:.3f}±{actual_vy_std:.3f}, wz={actual_wz_mean:.3f}±{actual_wz_std:.3f}")
             
             # Handle heading command if enabled
             if self.cfg.heading_command:
