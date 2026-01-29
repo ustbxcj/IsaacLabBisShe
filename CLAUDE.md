@@ -55,6 +55,14 @@ python scripts/rsl_rl/train.py --task Template-Naviation-Rough-Go2-v0 --headless
 # Walking policy / 行走策略
 python scripts/rsl_rl/play.py --task Template-Velocity-Go2-Walk-Flat-Play-v0
 
+# Walking policy with socket control / 行走策略 + Socket 控制
+python scripts/rsl_rl/play.py --task Template-Velocity-Go2-Walk-Flat-Ros-v0 \
+    --checkpoint ModelBackup/WalkPolicy/WalkFlatNew.pt
+
+# 在另一个终端发送命令 / Send commands in another terminal
+cd /home/xcj/work/IsaacLab/IsaacLabBisShe/Socket
+python send_cmd.py
+
 # Navigation policy / 导航策略
 python scripts/rsl_rl/play.py --task Template-Naviation-Rough-Go2-Play-v0
 ```
@@ -68,6 +76,9 @@ Tasks are located in `source/MyProject/MyProject/tasks/manager_based/`:
 - **WalkTest/**: Low-level locomotion task（低层运动任务）
   - `walk_flat_env_cfg.py`: Flat terrain configuration（平坦地形配置）
   - `walk_rough_env_cfg.py`: Rough terrain configuration（粗糙地形配置）
+  - `mdp/socket_velocity_command.py`: Socket command receiver with noise injection（Socket 命令接收器，含噪声注入）
+  - `mdp/socket_velocity_command_cfg.py`: Socket command configuration（Socket 命令配置）
+  - `mdp/rewards.py`: Custom reward functions（自定义奖励函数）
   - Inherits from Isaac Lab's official Go2 configuration with custom modifications（继承自 Isaac Lab 官方 Go2 配置并自定义）
 
 - **NaviationTest/**: High-level navigation task（高层导航任务）
@@ -250,7 +261,11 @@ IsaacLabBisShe/
 │       ├── WalkTest/          # Low-level walking（低层行走）
 │       │   ├── walk_flat_env_cfg.py
 │       │   ├── walk_rough_env_cfg.py
-│       │   └── agents/        # PPO configurations（PPO 配置）
+│       │   ├── agents/        # PPO configurations（PPO 配置）
+│       │   └── mdp/           # Socket command and rewards
+│       │       ├── socket_velocity_command.py
+│       │       ├── socket_velocity_command_cfg.py
+│       │       └── rewards.py
 │       └── NaviationTest/     # High-level navigation（高层导航）
 │           ├── naviation_flat_env_cfg.py
 │           ├── naviation_rough_env_cfg.py
@@ -260,12 +275,16 @@ IsaacLabBisShe/
 ├── scripts/rsl_rl/            # Training scripts（训练脚本）
 │   ├── train.py
 │   └── play.py
+├── Socket/                    # Socket command tools（Socket 命令工具）
+│   ├── send_cmd.py           # Command sender（命令发送器）
+│   └── README.md             # Documentation（文档）
 ├── NewTools/
 │   └── model_trans.py         # Model conversion tool（模型转换工具）
-└── ModelBackup/               # Trained models（训练好的模型）
-    ├── WalkPolicy/
-    ├── TransPolicy/
-    └── NaviationPolicy/
+├── ModelBackup/               # Trained models（训练好的模型）
+│   ├── WalkPolicy/
+│   ├── TransPolicy/
+│   └── NaviationPolicy/
+└── cleanup.sh                # Process cleanup script（进程清理脚本）
 ```
 
 ## Custom Modifications / 自定义修改
@@ -275,5 +294,48 @@ The project includes several custom modifications compared to official Isaac Lab
 
 1. **Terrain scaling**: Adjusted box heights and noise ranges for Go2's smaller size（地形缩放：为 Go2 更小的尺寸调整了盒子高度和噪声范围）
 2. **Disabled events**: Turned off push_robot and base_com randomization for stability（禁用事件：为稳定性关闭了 push_robot 和 base_com 随机化）
-3. **Custom rewards**: Navigation rewards for climbing obstacles（自定义奖励：用于爬越障碍物的导航奖励）
-4. **Hierarchical interface**: PreTrainedPolicyAction for two-level control（分层接口：用于两级控制的 PreTrainedPolicyAction）
+3. **Socket command system**: UDP socket receiver for manual velocity control with noise injection（Socket 命令系统：UDP socket 接收器，支持手动速度控制和噪声注入）
+   - Immediate response (100ms delay) with noise to match training distribution（立即响应，100ms 延迟，含噪声以匹配训练分布）
+   - Configuration: `resampling_time_range=(0.1, 0.1)`, `noise_scale=0.25`（配置：重采样间隔 0.1s，噪声幅度 ±0.25 m/s）
+4. **Custom rewards**: Navigation rewards for climbing obstacles（自定义奖励：用于爬越障碍物的导航奖励）
+5. **Hierarchical interface**: PreTrainedPolicyAction for two-level control（分层接口：用于两级控制的 PreTrainedPolicyAction）
+
+### Socket Command System / Socket 命令系统
+
+**Purpose**: Enable manual control without retraining the policy（目的：无需重新训练策略即可实现手动控制）
+
+**Key Features**:
+- **Inheritance design**: `SocketVelocityCommand` inherits `UniformVelocityCommand` to reuse existing logic（继承设计：复用 `UniformVelocityCommand` 的所有逻辑）
+- **Noise injection**: Adds noise to fixed commands to match training distribution（噪声注入：在固定命令上添加噪声，匹配训练分布）
+- **Immediate response**: 100ms latency with `resampling_time_range=(0.1, 0.1)`（立即响应：100ms 延迟）
+- **UDP socket**: Receives commands from `send_cmd.py` on port 5555（UDP socket：在 5555 端口接收命令）
+
+**Usage**:
+```bash
+# Terminal 1: Start simulation / 终端 1：启动仿真
+python scripts/rsl_rl/play.py --task Template-Velocity-Go2-Walk-Flat-Ros-v0
+
+# Terminal 2: Send commands / 终端 2：发送命令
+cd Socket
+python send_cmd.py  # WASDQE keyboard control / WASDQE 键盘控制
+```
+
+**Configuration** (`walk_flat_env_cfg.py`):
+```python
+self.commands.base_velocity = SocketVelocityCommandCfg(
+    asset_name="robot",
+    port=5555,
+    resampling_time_range=(0.1, 0.1),  # 100ms response（100ms 响应）
+    heading_command=False,              # Angular velocity mode（角速度模式）
+    add_command_noise=True,               # Enable noise（启用噪声）
+    noise_scale=0.25,                   # ±0.25 m/s noise（噪声幅度）
+)
+```
+
+**Why noise?**:
+- Training: Commands uniformly sampled from `(-1.0, 1.0)` m/s（训练：命令在 `(-1.0, 1.0)` 范围内均匀采样）
+- Inference: Using fixed commands like `vx=0.5 m/s`（推理：使用固定命令如 `vx=0.5 m/s`）
+- Problem: Distribution mismatch causes policy instability（问题：分布不匹配导致策略不稳定）
+- Solution: Add noise to fixed commands to simulate training distribution（解决方案：在固定命令上添加噪声）
+
+**Documentation**: See `Socket/README.md` for complete details（完整文档见 `Socket/README.md`）

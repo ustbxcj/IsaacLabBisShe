@@ -77,7 +77,7 @@ class VelocityGo2WalkFlatEnvCfg_Ros(VelocityGo2WalkFlatEnvCfg_Play):
         self.commands.base_velocity = SocketVelocityCommandCfg(
             asset_name="robot",
             port=5555,
-            resampling_time_range=(5.0, 5.0),  # Match training behavior (10s), but with noise need faster updates
+            resampling_time_range=(0.1, 0.1),  # Instant response (100ms delay)
             rel_standing_envs=0.00,
             rel_heading_envs=1.0,
             heading_command=False,              # 使用角速度模式（直接控制）
