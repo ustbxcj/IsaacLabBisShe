@@ -111,24 +111,7 @@ class SocketVelocityCommand(UniformVelocityCommand):
             self.vel_command_b[env_ids, 0] = target_vx + noise_x
             self.vel_command_b[env_ids, 1] = target_vy + noise_y
             self.vel_command_b[env_ids, 2] = target_wz + noise_z
-            
-            # DEBUG: Log command statistics
-            actual_vx_mean = self.vel_command_b[env_ids, 0].mean().item()
-            actual_vy_mean = self.vel_command_b[env_ids, 1].mean().item()
-            actual_wz_mean = self.vel_command_b[env_ids, 2].mean().item()
-            
-            if len(env_ids) > 1:
-                actual_vx_std = self.vel_command_b[env_ids, 0].std().item()
-                actual_vy_std = self.vel_command_b[env_ids, 1].std().item()
-                actual_wz_std = self.vel_command_b[env_ids, 2].std().item()
-            else:
-                actual_vx_std = 0.0
-                actual_vy_std = 0.0
-                actual_wz_std = 0.0
-            
-            print(f"[DEBUG] Fixed Command - Target: ({target_vx:.3f}, {target_vy:.3f}, {target_wz:.3f}), Noise scale: ±{self.noise_scale:.3f}")
-            print(f"[DEBUG] Fixed Command - Actual: vx={actual_vx_mean:.3f}±{actual_vx_std:.3f}, vy={actual_vy_mean:.3f}±{actual_vy_std:.3f}, wz={actual_wz_mean:.3f}±{actual_wz_std:.3f}")
-            
+
             # Handle heading command if enabled
             if self.cfg.heading_command:
                 self.heading_target[env_ids] = r.uniform_(*self.cfg.ranges.heading)
